@@ -4,6 +4,7 @@ import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LancamentoService {
 
@@ -19,4 +20,5 @@ public interface LancamentoService {
 
     void validar(Lancamento lancamento);
 
+    Optional<Lancamento> obterPorId(Long id);
 }
