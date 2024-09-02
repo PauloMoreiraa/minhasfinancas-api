@@ -10,6 +10,7 @@ import org.springframework.data.jpa.convert.threeten.Jsr310JpaConverters;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -43,7 +44,7 @@ public class Lancamento {
 
     @Column(name = "data_cadastro")
     @Convert(converter = Jsr310JpaConverters.LocalDateConverter.class)
-    private LocalDateTime dataCadastro;
+    private LocalDate dataCadastro;
 
     @Column(name = "tipo")
     @Enumerated(value = EnumType.STRING)
