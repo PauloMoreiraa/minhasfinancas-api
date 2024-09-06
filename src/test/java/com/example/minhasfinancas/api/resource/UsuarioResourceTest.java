@@ -41,20 +41,13 @@ public class UsuarioResourceTest {
 
     @Test
     public void deveAutenticarUmUsuario() throws Exception {
+        //cenario
         String email = "usuario@email.com";
         String senha = "123";
 
-        //cenario
-        UsuarioDTO dto = UsuarioDTO.builder()
-                            .email(email).
-                            senha(senha)
-                            .build();
+        UsuarioDTO dto = UsuarioDTO.builder().email(email).senha(senha).build();
 
-        Usuario usuario = Usuario.builder()
-                            .id(1l)
-                            .email(email)
-                            .senha(senha)
-                            .build();
+        Usuario usuario = Usuario.builder().id(1l).email(email).senha(senha).build();
 
         Mockito.when(service.autenticar(email, senha)).thenReturn(usuario);
 
