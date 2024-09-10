@@ -1,10 +1,12 @@
 package com.example.minhasfinancas.api.resource;
 
+import com.example.minhasfinancas.api.dto.TokenDTO;
 import com.example.minhasfinancas.api.dto.UsuarioDTO;
 import com.example.minhasfinancas.exception.ErroAutenticacao;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.repository.UsuarioRepository;
+import com.example.minhasfinancas.service.JwtService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +24,16 @@ public class UsuarioResource {
 
     private final UsuarioService service;
     private final LancamentoService lancamentoService;
+    private final JwtService jwtService;
 
     @PostMapping("/autenticar")
-    public ResponseEntity autenticar(@RequestBody UsuarioDTO dto){
+    public ResponseEntity<?> autenticar(@RequestBody UsuarioDTO dto){
         try {
             Usuario usuarioAutenticado = service.autenticar(dto.getEmail(), dto.getSenha());
-            return ResponseEntity.ok(usuarioAutenticado);
+            String token = jwtService.gerarToken(usuarioAutenticado);
+            TokenDTO tokenDTO = new TokenDTO(usuarioAutenticado.getNome(), token);
+
+            return ResponseEntity.ok(tokenDTO);
         } catch (ErroAutenticacao e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
