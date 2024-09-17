@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -83,22 +84,53 @@ public class LancamentoResource {
 
     @PutMapping("{id}/atualiza-status")
     public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto){
+        // Obtém o lançamento pelo ID fornecido
         return service.obterPorId(id).map(entity -> {
+            // Tenta converter o status recebido no DTO para um enum StatusLancamento
             StatusLancamento statusSelecionado = StatusLancamento.valueOf(dto.getStatus());
 
+            // Se o status fornecido não for válido, retorna um erro de solicitação
             if(statusSelecionado == null){
                 return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
+
+            // Verifica se a data do lançamento é futura
+            if (isDataFutura(entity)) {
+                return ResponseEntity.badRequest().body("O lançamento não pode ser atualizado ou cancelado com data futura.");
+            }
             try{
+                // Atualiza o status do lançamento
                 entity.setStatus(statusSelecionado);
+                // Persiste a atualização no banco de dados
                 service.atualizar(entity);
+                // Retorna a entidade atualizada com um status de sucesso
                 return ResponseEntity.ok(entity);
             }catch (RegraNegocioException e){
+                // Se ocorrer um erro de negócio, retorna um erro de solicitação ruim com a mensagem de erro
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
 
         }).orElseGet(() ->
                 new ResponseEntity("Lancamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
+    }
+
+    private boolean isDataFutura(Lancamento lancamento) {
+        // Obtém a data atual
+        LocalDate hoje = LocalDate.now();
+        int anoAtual = hoje.getYear();
+        int mesAtual = hoje.getMonthValue();
+
+        // Obtém o ano e o mês do lançamento
+        Integer anoLancamento = lancamento.getAno();
+        Integer mesLancamento = lancamento.getMes();
+
+        // Se o ano ou o mês do lançamento não estiverem informados, assume que não é uma data futura
+        if (anoLancamento == null || mesLancamento == null) {
+            return false; // Considera que um lançamento sem ano e mês não é futuro
+        }
+
+        // Verifica se o ano do lançamento é maior que o ano atual ou, se for o mesmo ano, se o mês é maior que o mês atual
+        return anoLancamento > anoAtual || (anoLancamento == anoAtual && mesLancamento > mesAtual);
     }
 
 

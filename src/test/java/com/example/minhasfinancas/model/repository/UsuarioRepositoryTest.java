@@ -1,22 +1,30 @@
 package com.example.minhasfinancas.model.repository;
 
+import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.model.entity.Usuario;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Repository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
-@DataJpaTest
+//@DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SpringBootTest(classes = MinhasfinancasApplication.class)
+@AutoConfigureTestEntityManager
+@Transactional
 public class UsuarioRepositoryTest {
 
     @Autowired

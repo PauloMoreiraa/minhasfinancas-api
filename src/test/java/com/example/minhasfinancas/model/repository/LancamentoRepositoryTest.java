@@ -1,5 +1,6 @@
 package com.example.minhasfinancas.model.repository;
 
+import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.enums.TipoLancamento;
@@ -8,10 +9,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,9 +23,12 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @RunWith(SpringRunner.class)
-@DataJpaTest
+//@DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@SpringBootTest(classes = MinhasfinancasApplication.class)
+@AutoConfigureTestEntityManager
+@Transactional
 public class LancamentoRepositoryTest {
 
     @Autowired

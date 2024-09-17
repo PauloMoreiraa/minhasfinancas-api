@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Year;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,6 +70,7 @@ public class LancamentoServiceImpl implements LancamentoService {
 
     @Override
     public void validar(Lancamento lancamento) {
+
         if(lancamento.getDescricao() == null || lancamento.getDescricao().trim().equals("")){
             throw new RegraNegocioException("Informe uma Descrição válida.");
         }

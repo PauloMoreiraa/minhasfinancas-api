@@ -84,6 +84,8 @@ public class LancamentoServiceTest {
         Mockito.verify(repository, Mockito.times(1)).save(lancamentoSalvo);
     }
 
+
+
     @Test
     public void deveLancarErroAoTentarAtualizarUmLancamentoQueAindaNaoFoiSalvo() {
         //cenario
