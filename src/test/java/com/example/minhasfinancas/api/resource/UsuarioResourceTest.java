@@ -28,7 +28,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 @RunWith(SpringRunner.class)
 @ActiveProfiles
 @WebMvcTest(controllers = UsuarioResource.class)
-
 @AutoConfigureMockMvc
 
 

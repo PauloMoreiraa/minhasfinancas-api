@@ -69,7 +69,13 @@ public class LancamentoResource {
 
     @PutMapping("{id}")
     public ResponseEntity atualizar(@PathVariable("id") Long id, @RequestBody LancamentoDTO dto) {
+        // Tenta obter o lançamento pelo ID fornecido
         return service.obterPorId(id).map(entity -> {
+            // Verifica se o lançamento está efetivado ou cancelado
+            if (entity.getStatus() == StatusLancamento.EFETIVADO || entity.getStatus() == StatusLancamento.CANCELADO) {
+                return ResponseEntity.badRequest().body("Não é possível atualizar um lançamento que já foi efetivado ou cancelado.");
+            }
+
             try {
                 Lancamento lancamento = converter(dto);
                 lancamento.setId(entity.getId());
@@ -79,8 +85,9 @@ public class LancamentoResource {
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }).orElseGet(() ->
-                new ResponseEntity("Lancamento não encontrado na base de Dasdos.", HttpStatus.BAD_REQUEST));
+                new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
+
 
     @PutMapping("{id}/atualiza-status")
     public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto){
@@ -111,7 +118,7 @@ public class LancamentoResource {
             }
 
         }).orElseGet(() ->
-                new ResponseEntity("Lancamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
+                new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
 
     private boolean isDataFutura(Lancamento lancamento) {
@@ -133,7 +140,6 @@ public class LancamentoResource {
         return anoLancamento > anoAtual || (anoLancamento == anoAtual && mesLancamento > mesAtual);
     }
 
-
     @DeleteMapping("{id}")
     public ResponseEntity deletar(@PathVariable("id") Long id) {
         return service.obterPorId(id).map(entidade ->{
@@ -142,6 +148,8 @@ public class LancamentoResource {
         }).orElseGet(()->
                 new ResponseEntity("Lancamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
     }
+
+
 
     private LancamentoDTO converter(Lancamento lancamento){
         return LancamentoDTO.builder()
@@ -154,7 +162,6 @@ public class LancamentoResource {
                 .tipo(lancamento.getTipo().name())
                 .usuario(lancamento.getUsuario().getId())
                 .build();
-
     }
 
     private Lancamento converter(LancamentoDTO dto) {
@@ -167,7 +174,7 @@ public class LancamentoResource {
 
         Usuario usuario = usuarioService
                 .obterPorId(dto.getUsuario())
-                .orElseThrow(() -> new RegraNegocioException("Usário não encontrado para o Id informado."));
+                .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado para o Id informado."));
 
         lancamento.setUsuario(usuario);
         if(dto.getTipo() != null) {
