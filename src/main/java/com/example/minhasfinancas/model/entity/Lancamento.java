@@ -53,4 +53,8 @@ public class Lancamento {
     @Column(name = "status")
     @Enumerated(value = EnumType.STRING)
     private StatusLancamento status;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
 }
