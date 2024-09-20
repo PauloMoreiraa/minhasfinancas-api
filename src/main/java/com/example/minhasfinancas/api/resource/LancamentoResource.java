@@ -12,17 +12,23 @@ import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.service.CategoriaService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/lancamentos")
@@ -34,6 +40,7 @@ public class LancamentoResource {
     private final CategoriaService categoriaService;
 
 
+    //Endpoint para buscar lançamento
     @GetMapping
     public ResponseEntity buscar(
             @RequestParam(value = "descricao", required = false) String descricao,
@@ -63,10 +70,12 @@ public class LancamentoResource {
                 .orElseGet(()-> new ResponseEntity(HttpStatus.NOT_FOUND));
     }
 
+
+    //Endpoint de salvar
     @PostMapping
     public ResponseEntity salvar(@RequestBody LancamentoDTO dto) {
         try {
-            // Verifica se o categoriaId é nulo
+            // Verifica se o Id da categoria é nulo
             if (dto.getCategoriaId() == null) {
                 return ResponseEntity.badRequest().body("A categoria não pode ser nula.");
             }
@@ -84,6 +93,7 @@ public class LancamentoResource {
         }
     }
 
+    //Endpoint de atualizar/editar o lançamento
     @PutMapping("{id}")
     public ResponseEntity atualizar(@PathVariable("id") Long id, @RequestBody LancamentoDTO dto) {
         // Tenta obter o lançamento pelo ID fornecido
@@ -106,6 +116,7 @@ public class LancamentoResource {
     }
 
 
+    //Endpoint para atualizar o status do lançamento
     @PutMapping("{id}/atualiza-status")
     public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto){
         // Obtém o lançamento pelo ID fornecido
@@ -137,6 +148,7 @@ public class LancamentoResource {
                 new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
 
+    //Verifica a data do lançamento
     private boolean isDataFutura(Lancamento lancamento) {
         // Obtém a data atual
         LocalDate hoje = LocalDate.now();
@@ -156,6 +168,8 @@ public class LancamentoResource {
         return anoLancamento > anoAtual || (anoLancamento == anoAtual && mesLancamento > mesAtual);
     }
 
+
+    //Endpoint de deletar lançamento
     @DeleteMapping("{id}")
     public ResponseEntity deletar(@PathVariable("id") Long id) {
         return service.obterPorId(id).map(entidade ->{
@@ -165,9 +179,8 @@ public class LancamentoResource {
                 new ResponseEntity("Lancamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
     }
 
-
-
     private LancamentoDTO converter(Lancamento lancamento){
+        //cria um objeto lançamentoDTO usando o padrão do projeto builder
         return LancamentoDTO.builder()
                 .id(lancamento.getId())
                 .descricao(lancamento.getDescricao())
@@ -181,6 +194,7 @@ public class LancamentoResource {
                 .build();
     }
 
+    //Endpoint de coverter categoria
     private Lancamento converter(LancamentoDTO dto) {
         Lancamento lancamento = new Lancamento();
         lancamento.setId(dto.getId());
@@ -216,16 +230,8 @@ public class LancamentoResource {
         return lancamento;
     }
 
-//    @PostMapping("{id}/importar")
-//    public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
-//        try {
-//            service.importarLancamentosCSV(file, usuario);
-//            return ResponseEntity.ok("Lançamentos importados com sucesso!");
-//        } catch (IOException | CsvValidationException e) {
-//            return ResponseEntity.badRequest().body("Erro ao importar lançamentos: " + e.getMessage());
-//        }
-//    }
 
+    //Endpoint de Upload de Arquivo CSV
     @PostMapping("{id}/importar")
     public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
         try {
@@ -236,6 +242,87 @@ public class LancamentoResource {
         }
     }
 
+//    //Endpoint de download de arquivo JSON
+//    @GetMapping("/download-json")
+//    public ResponseEntity<?> downloadLancamentosAsJson(
+//            @RequestParam(value = "descricao", required = false) String descricao,
+//            @RequestParam(value = "mes", required = false) Integer mes,
+//            @RequestParam(value = "ano", required = false) Integer ano,
+//            @RequestParam("usuario") Long idUsuario) {
+//
+//        // Busca os lançamentos com os filtros especificados
+//        Lancamento lancamentoFiltro = new Lancamento();
+//        lancamentoFiltro.setDescricao(descricao);
+//        lancamentoFiltro.setMes(mes);
+//        lancamentoFiltro.setAno(ano);
+//
+//        Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
+//        if (!usuario.isPresent()) {
+//            return ResponseEntity.badRequest().body("Usuário não encontrado para o Id informado.");
+//        } else {
+//            lancamentoFiltro.setUsuario(usuario.get());
+//        }
+//
+//        List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
+//
+//        if (lancamentos.isEmpty()) {
+//            return ResponseEntity.badRequest().body("Nenhum lançamento encontrado.");
+//        }
+//
+//        try {
+//            // Convertendo a lista de lançamentos para JSON
+//            ObjectMapper objectMapper = new ObjectMapper(); // Ferramenta para converter para JSON
+//            String jsonLancamentos = objectMapper.writeValueAsString(lancamentos.stream()
+//                    .map(this::converterParaContratoJson)
+//                    .collect(Collectors.toList()));
+//
+//            // Criando o cabeçalho do arquivo de resposta
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=lancamentos.json");
+//            headers.setContentType(MediaType.APPLICATION_JSON);
+//
+//            // Retorna o arquivo para download
+//            return ResponseEntity.ok()
+//                    .headers(headers)
+//                    .body(jsonLancamentos);
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Erro ao gerar o arquivo JSON: " + e.getMessage());
+//        }
+//    }
+//
+//    // Função que converte o objeto Lancamento no formato esperado
+//    private Map<String, Object> converterParaContratoJson(Lancamento lancamento) {
+//        Map<String, Object> lancamentoJson = new HashMap<>();
+//
+//        lancamentoJson.put("id", lancamento.getId());
+//        lancamentoJson.put("descricao", lancamento.getDescricao());
+//        lancamentoJson.put("mes", lancamento.getMes());
+//        lancamentoJson.put("ano", lancamento.getAno());
+//
+//        // Detalhes do usuário
+//        Map<String, Object> usuarioJson = new HashMap<>();
+//        usuarioJson.put("id", lancamento.getUsuario().getId());
+//        usuarioJson.put("nome", lancamento.getUsuario().getNome());
+//        lancamentoJson.put("usuario", usuarioJson);
+//
+//        lancamentoJson.put("valor", lancamento.getValor());
+//        lancamentoJson.put("dataCadastro", lancamento.getDataCadastro());
+//
+//        // Tipo e Status
+//        lancamentoJson.put("tipo", lancamento.getTipo().name());
+//        lancamentoJson.put("status", lancamento.getStatus().name());
+//
+//        // Detalhes da categoria
+//        Map<String, Object> categoriaJson = new HashMap<>();
+//        categoriaJson.put("id", lancamento.getCategoria().getId());
+//        categoriaJson.put("descricao", lancamento.getCategoria().getDescricao());
+//        categoriaJson.put("ativo", lancamento.getCategoria().isAtivo());
+//        lancamentoJson.put("categoria", categoriaJson);
+//
+//        return lancamentoJson;
+//    }
 
 
 }

@@ -15,6 +15,7 @@ public class CategoriaResource {
 
     private final CategoriaService service;
 
+    //Endpoint de salvar categoria
     @PostMapping
     public ResponseEntity salvar(@RequestBody final CategoriaDTO dto) {
         try {
@@ -27,6 +28,7 @@ public class CategoriaResource {
         }
     }
 
+    //Endpoint para converter categoria
     private Categoria converter(CategoriaDTO dto) {
         Categoria categoria = new Categoria();
         categoria.setId(dto.getId());
