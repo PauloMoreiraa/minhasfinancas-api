@@ -1,21 +1,29 @@
 package com.example.minhasfinancas.service.impl;
 
 import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
+import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.service.LancamentoService;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import lombok.Setter;
 import net.bytebuddy.matcher.StringMatcher;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,10 +31,14 @@ import java.util.Optional;
 @Service
 public class LancamentoServiceImpl implements LancamentoService {
 
+    private final UsuarioServiceImpl usuarioServiceImpl;
+    private final CategoriaServiceImpl categoriaServiceImpl;
     private LancamentoRepository repository;
 
-    public LancamentoServiceImpl(LancamentoRepository repository) {
+    public LancamentoServiceImpl(LancamentoRepository repository, UsuarioServiceImpl usuarioServiceImpl, CategoriaServiceImpl categoriaServiceImpl) {
         this.repository = repository;
+        this.usuarioServiceImpl = usuarioServiceImpl;
+        this.categoriaServiceImpl = categoriaServiceImpl;
     }
 
     @Override
@@ -110,5 +122,48 @@ public class LancamentoServiceImpl implements LancamentoService {
         }
 
         return receitas.subtract(despesas);
+    }
+
+    // *** Função para importar lançamentos a partir de um CSV ***
+    @Transactional
+    public void importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException {
+        List<Lancamento> lancamentos = new ArrayList<>();
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Arquivo CSV está vazio!");
+        }
+
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
+            String[] values;
+            csvReader.readNext(); // Ignorar o cabeçalho
+
+            while ((values = csvReader.readNext()) != null) {
+                Lancamento lancamento = new Lancamento();
+                lancamento.setDescricao(values[0]);
+                lancamento.setMes(Integer.parseInt(values[1]));
+                lancamento.setAno(Integer.parseInt(values[2]));
+                lancamento.setValor(new BigDecimal(values[3]));
+                lancamento.setTipo(TipoLancamento.valueOf(values[4].toUpperCase()));
+
+                // Buscar a categoria correspondente
+                Optional<Categoria> categoria = categoriaServiceImpl.obterPorDescricao(values[5]);
+
+                if (categoria.isPresent()) {
+                    lancamento.setCategoria(categoria.get());
+                } else {
+                    throw new IllegalArgumentException("Categoria não encontrada: " + values[5]);
+                }
+
+                lancamento.setStatus(StatusLancamento.PENDENTE);
+
+                Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
+                        .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                lancamento.setUsuario(usuario);
+
+                lancamentos.add(lancamento);
+            }
+        }
+
+        repository.saveAll(lancamentos);
     }
 }

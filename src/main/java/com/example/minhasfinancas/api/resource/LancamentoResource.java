@@ -3,17 +3,22 @@ package com.example.minhasfinancas.api.resource;
 import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
 import com.example.minhasfinancas.api.dto.LancamentoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.enums.TipoLancamento;
+import com.example.minhasfinancas.service.CategoriaService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
+import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +30,7 @@ public class LancamentoResource {
 
     private final LancamentoService service;
     private final UsuarioService usuarioService;
+    private final CategoriaService categoriaService;
 
 
     @GetMapping
@@ -59,6 +65,16 @@ public class LancamentoResource {
     @PostMapping
     public ResponseEntity salvar(@RequestBody LancamentoDTO dto) {
         try {
+            // Verifica se o categoriaId é nulo
+            if (dto.getCategoriaId() == null) {
+                return ResponseEntity.badRequest().body("A categoria não pode ser nula.");
+            }
+
+            // Verifica se a categoria existe
+            if (!categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
+                return ResponseEntity.badRequest().body("Categoria não encontrada, crie ou altere a categoria desejada.");
+            }
+
             Lancamento entidade = converter(dto);
             entidade = service.salvar(entidade);
             return new ResponseEntity(entidade, HttpStatus.CREATED);
@@ -103,7 +119,7 @@ public class LancamentoResource {
 
             // Verifica se a data do lançamento é futura
             if (isDataFutura(entity)) {
-                return ResponseEntity.badRequest().body("O lançamento não pode ser atualizado ou cancelado com data futura.");
+                return ResponseEntity.badRequest().body("O lançamento não pode ser efetivado ou cancelado com data futura.");
             }
             try{
                 // Atualiza o status do lançamento
@@ -116,7 +132,6 @@ public class LancamentoResource {
                 // Se ocorrer um erro de negócio, retorna um erro de solicitação ruim com a mensagem de erro
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
-
         }).orElseGet(() ->
                 new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
@@ -161,6 +176,7 @@ public class LancamentoResource {
                 .status(lancamento.getStatus().name())
                 .tipo(lancamento.getTipo().name())
                 .usuario(lancamento.getUsuario().getId())
+                .categoriaId(lancamento.getCategoria().getId())
                 .build();
     }
 
@@ -172,18 +188,42 @@ public class LancamentoResource {
         lancamento.setAno(dto.getAno());
         lancamento.setValor(dto.getValor());
 
+        // Verifica se o usuário existe
         Usuario usuario = usuarioService
                 .obterPorId(dto.getUsuario())
                 .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado para o Id informado."));
-
         lancamento.setUsuario(usuario);
-        if(dto.getTipo() != null) {
+
+        // Verifica se a categoria é válida
+        if (dto.getCategoriaId() == null || !categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
+            throw new RegraNegocioException("A categoria não pode ser nula ou inválida.");
+        }
+
+        // Se a categoria é válida, busca e define no lançamento
+        Categoria categoria = categoriaService.obterPorId(dto.getCategoriaId()).orElseThrow(
+                () -> new RegraNegocioException("Categoria não encontrada para o Id informado.")
+        );
+        lancamento.setCategoria(categoria);
+
+        if (dto.getTipo() != null) {
             lancamento.setTipo(TipoLancamento.valueOf(dto.getTipo()));
         }
-        if(dto.getStatus() != null) {
+        if (dto.getStatus() != null) {
             lancamento.setStatus(StatusLancamento.valueOf(dto.getStatus()));
         }
 
         return lancamento;
     }
+
+    @PostMapping("{id}/importar")
+    public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
+        try {
+            service.importarLancamentosCSV(file, usuario);
+            return ResponseEntity.ok("Lançamentos importados com sucesso!");
+        } catch (IOException | CsvValidationException e) {
+            return ResponseEntity.badRequest().body("Erro ao importar lançamentos: " + e.getMessage());
+        }
+    }
+
+
 }
