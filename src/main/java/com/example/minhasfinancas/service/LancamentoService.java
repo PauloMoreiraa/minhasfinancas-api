@@ -1,5 +1,6 @@
 package com.example.minhasfinancas.service;
 
+import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.opencsv.exceptions.CsvValidationException;
@@ -28,6 +29,6 @@ public interface LancamentoService {
 
     BigDecimal obterSaldoPorUsuario(Long id);
 
-    void importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException;
+    ImportacaoResultadoDTO importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException;
 
 }

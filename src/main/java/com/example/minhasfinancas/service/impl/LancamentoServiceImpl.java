@@ -1,5 +1,6 @@
 package com.example.minhasfinancas.service.impl;
 
+import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
@@ -23,10 +24,7 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class LancamentoServiceImpl implements LancamentoService {
@@ -124,46 +122,108 @@ public class LancamentoServiceImpl implements LancamentoService {
         return receitas.subtract(despesas);
     }
 
-    // *** Função para importar lançamentos a partir de um CSV ***
+    @Override
     @Transactional
-    public void importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException {
+    public ImportacaoResultadoDTO importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException {
         List<Lancamento> lancamentos = new ArrayList<>();
+        List<String> mensagensErros = new ArrayList<>();
+        int lancamentosImportados = 0;
+        int erros = 0;
 
+        //Lê se o arquivo está vazio
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Arquivo CSV está vazio!");
         }
 
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
             String[] values;
+            int linhaAtual = 0; // Contador para a linha atual no CSV (inicia após o cabeçalho)
             csvReader.readNext(); // Ignorar o cabeçalho
 
             while ((values = csvReader.readNext()) != null) {
-                Lancamento lancamento = new Lancamento();
-                lancamento.setDescricao(values[0]);
-                lancamento.setMes(Integer.parseInt(values[1]));
-                lancamento.setAno(Integer.parseInt(values[2]));
-                lancamento.setValor(new BigDecimal(values[3]));
-                lancamento.setTipo(TipoLancamento.valueOf(values[4].toUpperCase()));
+                linhaAtual++; // Incrementa o número da linha a cada nova iteração
 
-                // Buscar a categoria correspondente
-                Optional<Categoria> categoria = categoriaServiceImpl.obterPorDescricao(values[5]);
+                try {
+                    // Validação da Descrição (Coluna 0)
+                    String descricao = values[0];
+                    if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
 
-                if (categoria.isPresent()) {
-                    lancamento.setCategoria(categoria.get());
-                } else {
-                    throw new IllegalArgumentException("Categoria não encontrada: " + values[5]);
+                    // Validação do Mês (Coluna 1)
+                    int mes = Integer.parseInt(values[1]);
+                    if (mes < 1 || mes > 12) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 1 (Mês): Mês inválido (valor: " + mes + ").");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
+
+                    // Validação do Ano (Coluna 2)
+                    int ano = Integer.parseInt(values[2]);
+                    if (String.valueOf(ano).length() != 4) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
+
+                    // Validação do Valor (Coluna 3)
+                    BigDecimal valor = new BigDecimal(values[3]);
+                    if (valor.compareTo(BigDecimal.ZERO) < 0) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 3 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
+
+                    // Validação do Tipo de Lançamento (Coluna 4)
+                    String tipo = values[4].toUpperCase();
+                    if (!tipo.equals("RECEITA") && !tipo.equals("DESPESA")) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
+
+                    // Buscar a categoria correspondente (Coluna 5)
+                    Optional<Categoria> categoria = categoriaServiceImpl.obterPorDescricao(values[5]);
+
+                    if (categoria.isPresent()) {
+                        Lancamento lancamento = new Lancamento();
+                        lancamento.setDescricao(descricao);
+                        lancamento.setMes(mes);
+                        lancamento.setAno(ano);
+                        lancamento.setValor(valor);
+                        lancamento.setTipo(TipoLancamento.valueOf(tipo));
+                        lancamento.setCategoria(categoria.get());
+                        lancamento.setStatus(StatusLancamento.PENDENTE);
+
+                        Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
+                                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                        lancamento.setUsuario(usuario);
+
+                        lancamentos.add(lancamento);
+                        lancamentosImportados++;
+                    } else {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 5 (Categoria): Categoria não encontrada (valor: " + values[5] + ").");
+                        erros++;
+                    }
+                } catch (Exception e) {
+                    mensagensErros.add("Erro ao processar linha " + linhaAtual + ": " + Arrays.toString(values) + " - " + e.getMessage());
+                    erros++;
                 }
-
-                lancamento.setStatus(StatusLancamento.PENDENTE);
-
-                Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
-                        .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
-                lancamento.setUsuario(usuario);
-
-                lancamentos.add(lancamento);
             }
         }
 
-        repository.saveAll(lancamentos);
+        // Salvando os lançamentos se houverem lançamentos válidos
+        if (!lancamentos.isEmpty()) {
+            repository.saveAll(lancamentos);
+        }
+
+        // Adiciona mensagem de sucesso caso não haja erros
+        if (erros == 0) {
+            mensagensErros.add("Importação realizada com sucesso! Todos os lançamentos foram importados sem erros.");
+        }
+
+        return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
 }

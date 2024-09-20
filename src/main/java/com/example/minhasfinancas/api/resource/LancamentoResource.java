@@ -1,6 +1,7 @@
 package com.example.minhasfinancas.api.resource;
 
 import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
+import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.api.dto.LancamentoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Categoria;
@@ -215,15 +216,26 @@ public class LancamentoResource {
         return lancamento;
     }
 
+//    @PostMapping("{id}/importar")
+//    public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
+//        try {
+//            service.importarLancamentosCSV(file, usuario);
+//            return ResponseEntity.ok("Lançamentos importados com sucesso!");
+//        } catch (IOException | CsvValidationException e) {
+//            return ResponseEntity.badRequest().body("Erro ao importar lançamentos: " + e.getMessage());
+//        }
+//    }
+
     @PostMapping("{id}/importar")
     public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
         try {
-            service.importarLancamentosCSV(file, usuario);
-            return ResponseEntity.ok("Lançamentos importados com sucesso!");
+            ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, usuario);
+            return ResponseEntity.ok(resultado);
         } catch (IOException | CsvValidationException e) {
             return ResponseEntity.badRequest().body("Erro ao importar lançamentos: " + e.getMessage());
         }
     }
+
 
 
 }
