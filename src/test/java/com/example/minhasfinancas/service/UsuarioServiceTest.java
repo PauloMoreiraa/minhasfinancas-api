@@ -1,9 +1,11 @@
 package com.example.minhasfinancas.service;
 
+import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.exception.ErroAutenticacao;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.repository.UsuarioRepository;
+import com.example.minhasfinancas.service.impl.SecurityUserDetailsService;
 import com.example.minhasfinancas.service.impl.UsuarioServiceImpl;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -12,6 +14,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -19,12 +23,24 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@SpringBootTest
+//@RunWith(SpringRunner.class)
+//@ActiveProfiles("test")
+//@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+//@SpringBootTest(classes = MinhasfinancasApplication.class)
+//@AutoConfigureTestEntityManager
+//@Transactional
+
+
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SpringBootTest(classes = MinhasfinancasApplication.class)
+@AutoConfigureTestEntityManager
+@Transactional
 public class UsuarioServiceTest {
 
     @SpyBean
@@ -32,7 +48,8 @@ public class UsuarioServiceTest {
 
     @MockBean
     UsuarioRepository repository;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test(expected = Test.None.class)
     public void deveSalvarUmUsuario(){
@@ -68,6 +85,7 @@ public class UsuarioServiceTest {
         //verificacao
         Mockito.verify(repository, Mockito.never()).save(usuario);
     }
+
 
     @Test(expected = Test.None.class)
     public void deveAutenticarUmUsuarioComSucesso(){

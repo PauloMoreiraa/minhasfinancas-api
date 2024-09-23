@@ -12,13 +12,17 @@ import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.service.CategoriaService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -236,87 +240,62 @@ public class LancamentoController {
         }
     }
 
-//    //Endpoint de download de arquivo JSON
-//    @GetMapping("/download-json")
-//    public ResponseEntity<?> downloadLancamentosAsJson(
-//            @RequestParam(value = "descricao", required = false) String descricao,
-//            @RequestParam(value = "mes", required = false) Integer mes,
-//            @RequestParam(value = "ano", required = false) Integer ano,
-//            @RequestParam("usuario") Long idUsuario) {
-//
-//        // Busca os lançamentos com os filtros especificados
-//        Lancamento lancamentoFiltro = new Lancamento();
-//        lancamentoFiltro.setDescricao(descricao);
-//        lancamentoFiltro.setMes(mes);
-//        lancamentoFiltro.setAno(ano);
-//
-//        Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
-//        if (!usuario.isPresent()) {
-//            return ResponseEntity.badRequest().body("Usuário não encontrado para o Id informado.");
-//        } else {
-//            lancamentoFiltro.setUsuario(usuario.get());
-//        }
-//
-//        List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
-//
-//        if (lancamentos.isEmpty()) {
-//            return ResponseEntity.badRequest().body("Nenhum lançamento encontrado.");
-//        }
-//
-//        try {
-//            // Convertendo a lista de lançamentos para JSON
-//            ObjectMapper objectMapper = new ObjectMapper(); // Ferramenta para converter para JSON
-//            String jsonLancamentos = objectMapper.writeValueAsString(lancamentos.stream()
-//                    .map(this::converterParaContratoJson)
-//                    .collect(Collectors.toList()));
-//
-//            // Criando o cabeçalho do arquivo de resposta
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=lancamentos.json");
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//            // Retorna o arquivo para download
-//            return ResponseEntity.ok()
-//                    .headers(headers)
-//                    .body(jsonLancamentos);
-//
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Erro ao gerar o arquivo JSON: " + e.getMessage());
-//        }
-//    }
-//
-//    // Função que converte o objeto Lancamento no formato esperado
-//    private Map<String, Object> converterParaContratoJson(Lancamento lancamento) {
-//        Map<String, Object> lancamentoJson = new HashMap<>();
-//
-//        lancamentoJson.put("id", lancamento.getId());
-//        lancamentoJson.put("descricao", lancamento.getDescricao());
-//        lancamentoJson.put("mes", lancamento.getMes());
-//        lancamentoJson.put("ano", lancamento.getAno());
-//
-//        // Detalhes do usuário
-//        Map<String, Object> usuarioJson = new HashMap<>();
-//        usuarioJson.put("id", lancamento.getUsuario().getId());
-//        usuarioJson.put("nome", lancamento.getUsuario().getNome());
-//        lancamentoJson.put("usuario", usuarioJson);
-//
-//        lancamentoJson.put("valor", lancamento.getValor());
-//        lancamentoJson.put("dataCadastro", lancamento.getDataCadastro());
-//
-//        // Tipo e Status
-//        lancamentoJson.put("tipo", lancamento.getTipo().name());
-//        lancamentoJson.put("status", lancamento.getStatus().name());
-//
-//        // Detalhes da categoria
-//        Map<String, Object> categoriaJson = new HashMap<>();
-//        categoriaJson.put("id", lancamento.getCategoria().getId());
-//        categoriaJson.put("descricao", lancamento.getCategoria().getDescricao());
-//        categoriaJson.put("ativo", lancamento.getCategoria().isAtivo());
-//        lancamentoJson.put("categoria", categoriaJson);
-//
-//        return lancamentoJson;
-//    }
+    // Novo endpoint para download de lançamentos filtrados em JSON
+    @GetMapping("/download")
+    public ResponseEntity<?> downloadLancamentos(
+            @RequestParam(value = "descricao", required = false) String descricao,
+            @RequestParam(value = "mes", required = false) Integer mes,
+            @RequestParam(value = "ano", required = false) Integer ano,
+            @RequestParam("usuario") Long idUsuario
+    ) {
+        // Verificar se o ID do usuário é válido
+        if (idUsuario == null || idUsuario <= 0) {
+            return ResponseEntity.badRequest().body("ID de usuário inválido.");
+        }
 
+        // Verificar se os parâmetros mês e ano são válidos
+        if ((mes != null && (mes < 1 || mes > 12)) || (ano != null && ano < 0)) {
+            return ResponseEntity.badRequest().body("Mês ou ano inválido.");
+        }
+
+        Lancamento lancamentoFiltro = new Lancamento();
+        lancamentoFiltro.setDescricao(descricao);
+        lancamentoFiltro.setMes(mes);
+        lancamentoFiltro.setAno(ano);
+
+        // Buscar usuário e verificar se existe
+        Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
+        if (!usuario.isPresent()) {
+            return ResponseEntity.badRequest().body("Usuário não encontrado para o ID informado.");
+        }
+        lancamentoFiltro.setUsuario(usuario.get());
+
+        // Buscar lançamentos com o filtro
+        List<Lancamento> lancamentos;
+        try {
+            lancamentos = service.buscar(lancamentoFiltro);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao buscar lançamentos: " + e.getMessage());
+        }
+
+        // Verificar se não há lançamentos
+        if (lancamentos.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        // Converter os lançamentos para JSON e retornar
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            objectMapper.writeValue(outputStream, lancamentos);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=lancamentos.json")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(outputStream.toByteArray());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar o arquivo JSON: " + e.getMessage());
+        }
+    }
 
 }

@@ -20,7 +20,6 @@ import java.util.Optional;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
-//@DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @SpringBootTest(classes = MinhasfinancasApplication.class)
 @AutoConfigureTestEntityManager
