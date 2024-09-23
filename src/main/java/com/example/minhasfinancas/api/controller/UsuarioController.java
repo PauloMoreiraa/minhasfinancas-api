@@ -1,11 +1,10 @@
-package com.example.minhasfinancas.api.resource;
+package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.api.dto.TokenDTO;
 import com.example.minhasfinancas.api.dto.UsuarioDTO;
 import com.example.minhasfinancas.exception.ErroAutenticacao;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Usuario;
-import com.example.minhasfinancas.model.repository.UsuarioRepository;
 import com.example.minhasfinancas.service.JwtService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
@@ -20,7 +19,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
-public class UsuarioResource {
+public class UsuarioController {
 
     private final UsuarioService service;
     private final LancamentoService lancamentoService;

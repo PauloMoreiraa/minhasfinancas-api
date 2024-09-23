@@ -1,4 +1,4 @@
-package com.example.minhasfinancas.api.resource;
+package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.api.dto.UsuarioDTO;
 import com.example.minhasfinancas.exception.ErroAutenticacao;
@@ -15,7 +15,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,11 +26,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles
-@WebMvcTest(controllers = UsuarioResource.class)
+@WebMvcTest(controllers = UsuarioController.class)
 @AutoConfigureMockMvc
 
 
-public class UsuarioResourceTest {
+public class UsuarioControllerTest {
     static final String API = "/api/usuarios";
     static final MediaType JSON = MediaType.APPLICATION_JSON;
 

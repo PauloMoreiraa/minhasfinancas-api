@@ -1,4 +1,4 @@
-package com.example.minhasfinancas.api.resource;
+package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.api.dto.CategoriaDTO;
 import com.example.minhasfinancas.model.entity.Categoria;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/categorias")
 @RequiredArgsConstructor
-public class CategoriaResource {
+public class CategoriaController {
 
     private final CategoriaService service;
 

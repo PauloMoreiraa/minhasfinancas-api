@@ -1,4 +1,4 @@
-package com.example.minhasfinancas.api.resource;
+package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
 import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
@@ -12,28 +12,22 @@ import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.service.CategoriaService;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.UsuarioService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/lancamentos")
 @RequiredArgsConstructor
-public class LancamentoResource {
+public class LancamentoController {
 
     private final LancamentoService service;
     private final UsuarioService usuarioService;
