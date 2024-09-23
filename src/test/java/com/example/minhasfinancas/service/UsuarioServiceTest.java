@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.eq;
+
 //@RunWith(SpringRunner.class)
 //@ActiveProfiles("test")
 //@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -48,7 +50,8 @@ public class UsuarioServiceTest {
 
     @MockBean
     UsuarioRepository repository;
-    @Autowired
+
+    @MockBean
     private PasswordEncoder passwordEncoder;
 
     @Test(expected = Test.None.class)
@@ -95,6 +98,7 @@ public class UsuarioServiceTest {
 
        Usuario usuario = Usuario.builder().email(email).senha(senha).id(1l).build();
        Mockito.when(repository.findByEmail(email)).thenReturn(Optional.of(usuario));
+       Mockito.when(passwordEncoder.matches(Mockito.anyString(), eq(senha))).thenReturn(true);
 
        //acao
         Usuario result = service.autenticar(email, senha);
