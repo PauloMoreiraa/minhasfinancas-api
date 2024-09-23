@@ -41,6 +41,10 @@ public class LancamentoRepositoryTest {
     @Autowired
     TestEntityManager entityManager;
 
+
+
+
+
     @Test
     public void deveSalvarUmLancamento(){
         Lancamento lancamento = Lancamento.builder()

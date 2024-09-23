@@ -2,6 +2,7 @@ package com.example.minhasfinancas.service.impl;
 
 import com.example.minhasfinancas.exception.ErroAutenticacao;
 import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.repository.UsuarioRepository;
 import com.example.minhasfinancas.service.UsuarioService;
@@ -66,4 +67,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     public Optional<Usuario> obterPorId(Long id) {
         return repository.findById(id);
     }
+
+
 }

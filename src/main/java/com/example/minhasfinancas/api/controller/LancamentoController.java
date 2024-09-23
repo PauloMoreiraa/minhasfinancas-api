@@ -116,29 +116,41 @@ public class LancamentoController {
 
     //Endpoint para atualizar o status do lançamento
     @PutMapping("{id}/atualiza-status")
-    public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto){
+    public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto) {
         // Obtém o lançamento pelo ID fornecido
         return service.obterPorId(id).map(entity -> {
-            // Tenta converter o status recebido no DTO para um enum StatusLancamento
-            StatusLancamento statusSelecionado = StatusLancamento.valueOf(dto.getStatus());
-
-            // Se o status fornecido não for válido, retorna um erro de solicitação
-            if(statusSelecionado == null){
+            // Verifica se o status está nulo ou vazio
+            if (dto.getStatus() == null || dto.getStatus().isEmpty()) {
                 return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
 
-            // Verifica se a data do lançamento é futura
-            if (isDataFutura(entity)) {
-                return ResponseEntity.badRequest().body("O lançamento não pode ser efetivado ou cancelado com data futura.");
+            // Tenta converter o status recebido no DTO para um enum StatusLancamento
+            StatusLancamento statusSelecionado;
+
+            try {
+                statusSelecionado = StatusLancamento.valueOf(dto.getStatus().toUpperCase()); // Conversão segura
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
-            try{
+
+            // Verifica se o status é válido
+            if (statusSelecionado != StatusLancamento.EFETIVADO && statusSelecionado != StatusLancamento.CANCELADO) {
+                return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
+            }
+
+            // Se o status é EFETIVADO, verifica se a data do lançamento é futura
+            if (statusSelecionado == StatusLancamento.EFETIVADO && isDataFutura(entity)) {
+                return ResponseEntity.badRequest().body("O lançamento não pode ser efetivado com data futura.");
+            }
+
+            try {
                 // Atualiza o status do lançamento
                 entity.setStatus(statusSelecionado);
                 // Persiste a atualização no banco de dados
                 service.atualizar(entity);
                 // Retorna a entidade atualizada com um status de sucesso
                 return ResponseEntity.ok(entity);
-            }catch (RegraNegocioException e){
+            } catch (RegraNegocioException e) {
                 // Se ocorrer um erro de negócio, retorna um erro de solicitação ruim com a mensagem de erro
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
@@ -146,14 +158,12 @@ public class LancamentoController {
                 new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
 
-    //Verifica a data do lançamento
+    // Verifica a data do lançamento
     private boolean isDataFutura(Lancamento lancamento) {
-        // Obtém a data atual
         LocalDate hoje = LocalDate.now();
         int anoAtual = hoje.getYear();
         int mesAtual = hoje.getMonthValue();
 
-        // Obtém o ano e o mês do lançamento
         Integer anoLancamento = lancamento.getAno();
         Integer mesLancamento = lancamento.getMes();
 
