@@ -38,12 +38,36 @@ public class LancamentoController {
     private final CategoriaService categoriaService;
 
 
-    //Endpoint para buscar lançamento
+//    Endpoint para buscar lançamento
+//    @GetMapping
+//    public ResponseEntity buscar(
+//            @RequestParam(value = "descricao", required = false) String descricao,
+//            @RequestParam(value = "mes", required = false) Integer mes,
+//            @RequestParam(value = "ano", required = false) Integer ano,
+//            @RequestParam("usuario") Long idUsuario
+//    ) {
+//        Lancamento lancamentoFiltro = new Lancamento();
+//        lancamentoFiltro.setDescricao(descricao);
+//        lancamentoFiltro.setMes(mes);
+//        lancamentoFiltro.setAno(ano);
+//
+//        Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
+//        if(!usuario.isPresent()) {
+//            return ResponseEntity.badRequest().body("Não foi possível realizar a consulta. Usuário não encontrado para o Id informado.");
+//        }else{
+//            lancamentoFiltro.setUsuario(usuario.get());
+//        }
+//        List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
+//        return ResponseEntity.ok(lancamentos);
+//    }
+
     @GetMapping
     public ResponseEntity buscar(
             @RequestParam(value = "descricao", required = false) String descricao,
             @RequestParam(value = "mes", required = false) Integer mes,
             @RequestParam(value = "ano", required = false) Integer ano,
+            @RequestParam(value = "categoriaId", required = false) Long categoriaId,
+            @RequestParam(value = "tipo", required = false) String tipo, // Pode ser "RECEITA" ou "DESPESA"
             @RequestParam("usuario") Long idUsuario
     ) {
         Lancamento lancamentoFiltro = new Lancamento();
@@ -52,11 +76,23 @@ public class LancamentoController {
         lancamentoFiltro.setAno(ano);
 
         Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
-        if(!usuario.isPresent()) {
+        if (!usuario.isPresent()) {
             return ResponseEntity.badRequest().body("Não foi possível realizar a consulta. Usuário não encontrado para o Id informado.");
-        }else{
+        } else {
             lancamentoFiltro.setUsuario(usuario.get());
         }
+
+        // Adiciona a categoria e tipo de lançamento no filtro
+        if (categoriaId != null) {
+            Categoria categoria = new Categoria();
+            categoria.setId(categoriaId);
+            lancamentoFiltro.setCategoria(categoria);
+        }
+
+        if (tipo != null) {
+            lancamentoFiltro.setTipo(TipoLancamento.valueOf(tipo));
+        }
+
         List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
         return ResponseEntity.ok(lancamentos);
     }
@@ -184,7 +220,7 @@ public class LancamentoController {
             service.deletar(entidade);
             return new ResponseEntity(HttpStatus.NO_CONTENT);
         }).orElseGet(()->
-                new ResponseEntity("Lancamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
+                new ResponseEntity("Lançamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
     }
 
     private LancamentoDTO converter(Lancamento lancamento){
