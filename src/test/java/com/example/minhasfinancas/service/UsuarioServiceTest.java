@@ -1,47 +1,28 @@
 package com.example.minhasfinancas.service;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
-import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
 import com.example.minhasfinancas.exception.ErroAutenticacao;
 import com.example.minhasfinancas.exception.RegraNegocioException;
-import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
-import com.example.minhasfinancas.model.repository.LancamentoRepositoryTest;
 import com.example.minhasfinancas.model.repository.UsuarioRepository;
-import com.example.minhasfinancas.service.impl.SecurityUserDetailsService;
 import com.example.minhasfinancas.service.impl.UsuarioServiceImpl;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.eq;
-
-//@RunWith(SpringRunner.class)
-//@ActiveProfiles("test")
-//@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-//@SpringBootTest(classes = MinhasfinancasApplication.class)
-//@AutoConfigureTestEntityManager
-//@Transactional
-
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")

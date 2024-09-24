@@ -1,33 +1,25 @@
 package com.example.minhasfinancas.model.repository;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
-import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.enums.TipoLancamento;
 import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @RunWith(SpringRunner.class)
-//@DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @SpringBootTest(classes = MinhasfinancasApplication.class)
@@ -41,9 +33,20 @@ public class LancamentoRepositoryTest {
     @Autowired
     TestEntityManager entityManager;
 
+    //teste para atualizar o status de um lançamento
+    @Test
+    public void deveAtualizarStatusDeUmLancamento() {
+        // Cenário: criar e persistir um lançamento com status PENDENTE
+        Lancamento lancamento = criarEPersistirUmLancamento();
 
+        // Ação: atualizar o status para EFETIVADO
+        lancamento.setStatus(StatusLancamento.EFETIVADO);
+        repository.save(lancamento);
 
-
+        // Verificação: buscar o lançamento atualizado e verificar o status
+        Lancamento lancamentoAtualizado = entityManager.find(Lancamento.class, lancamento.getId());
+        assertThat(lancamentoAtualizado.getStatus()).isEqualTo(StatusLancamento.EFETIVADO);
+    }
 
     @Test
     public void deveSalvarUmLancamento(){
@@ -78,7 +81,6 @@ public class LancamentoRepositoryTest {
     @Test
     public void deveAtualizarUmLancamento(){
         Lancamento lancamento = criarEPersistirUmLancamento();
-
         lancamento.setAno(2023);
         lancamento.setDescricao("Teste atualizar");
         lancamento.setStatus(StatusLancamento.CANCELADO);
@@ -118,7 +120,4 @@ public class LancamentoRepositoryTest {
                 .dataCadastro(LocalDate.now())
                 .build();
     }
-
-    //novos teste
-
 }

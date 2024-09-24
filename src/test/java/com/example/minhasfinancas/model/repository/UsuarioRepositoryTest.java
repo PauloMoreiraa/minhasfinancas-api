@@ -46,8 +46,6 @@ public class UsuarioRepositoryTest {
     }
     @Test
     public void deveRetornarFalsoQuandoNaoHouverUsuarioCadastrdoComOEmail(){
-        //cenario
-
         //acao
         boolean result = repository.existsByEmail("usuario@email.com");
 

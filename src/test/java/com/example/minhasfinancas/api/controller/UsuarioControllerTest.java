@@ -71,10 +71,10 @@ public class UsuarioControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk());
-//                .andExpect(MockMvcResultMatchers.jsonPath("id").value(usuario.getId()))
-//                .andExpect(MockMvcResultMatchers.jsonPath("nome").value(usuario.getNome()))
-//                .andExpect(MockMvcResultMatchers.jsonPath("email").value(usuario.getEmail()));
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("id").value(usuario.getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("nome").value(usuario.getNome()))
+                .andExpect(MockMvcResultMatchers.jsonPath("email").value(usuario.getEmail()));
     }
 
     @Test

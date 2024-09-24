@@ -1,7 +1,6 @@
 package com.example.minhasfinancas.service;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
-import com.example.minhasfinancas.api.dto.LancamentoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
@@ -12,33 +11,21 @@ import com.example.minhasfinancas.service.impl.LancamentoServiceImpl;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.domain.Example;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-//@RunWith(SpringRunner.class)
-//@ActiveProfiles("test")
-//@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-//@SpringBootTest(classes = MinhasfinancasApplication.class)
-//@AutoConfigureTestEntityManager
-//@Transactional
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -53,11 +40,6 @@ public class LancamentoServiceTest {
 
     @MockBean
     LancamentoRepository repository;
-
-
-
-
-
 
     @Test
     public void deveSalvarUmLancamento() {
@@ -204,7 +186,6 @@ public class LancamentoServiceTest {
     public void deveRetornarVazioQuandoOLancamentoNaoExiste(){
         //cenario
         Long id = 1l;
-
         Lancamento lancamento = LancamentoRepositoryTest.criarLancamento();
         lancamento.setId(1l);
 
@@ -279,7 +260,5 @@ public class LancamentoServiceTest {
 
         erro = Assertions.catchThrowable(()-> service.validar(lancamento));
         Assertions.assertThat(erro).isInstanceOf(RegraNegocioException.class).hasMessage("Informe um tipo de Lançamento.");
-
-
     }
 }
