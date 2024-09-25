@@ -130,7 +130,7 @@ public class LancamentoServiceImpl implements LancamentoService {
         int lancamentosImportados = 0;
         int erros = 0;
 
-        //Lê se o arquivo está vazio
+        // Verifica se o arquivo está vazio
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Arquivo CSV está vazio!");
         }
@@ -144,6 +144,13 @@ public class LancamentoServiceImpl implements LancamentoService {
                 linhaAtual++; // Incrementa o número da linha a cada nova iteração
 
                 try {
+                    // Verifica se a linha tem exatamente 6 colunas
+                    if (values.length != 6) {
+                        mensagensErros.add("Erro na linha " + linhaAtual + ": número incorreto de colunas (exigido: 6, encontrado: " + values.length + ").");
+                        erros++;
+                        continue; // Pula para a próxima linha
+                    }
+
                     // Validação da Descrição (Coluna 0)
                     String descricao = values[0];
                     if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
@@ -184,29 +191,37 @@ public class LancamentoServiceImpl implements LancamentoService {
                         continue; // Pula para a próxima linha
                     }
 
-                    // Buscar a categoria correspondente (Coluna 5)
-                    Optional<Categoria> categoria = categoriaServiceImpl.obterPorDescricao(values[5]);
+                    // Validação da Categoria (Coluna 5) - opcional
+                    String categoriaStr = values[5];
+                    Categoria categoria = null;
 
-                    if (categoria.isPresent()) {
-                        Lancamento lancamento = new Lancamento();
-                        lancamento.setDescricao(descricao);
-                        lancamento.setMes(mes);
-                        lancamento.setAno(ano);
-                        lancamento.setValor(valor);
-                        lancamento.setTipo(TipoLancamento.valueOf(tipo));
-                        lancamento.setCategoria(categoria.get());
-                        lancamento.setStatus(StatusLancamento.PENDENTE);
-
-                        Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
-                                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
-                        lancamento.setUsuario(usuario);
-
-                        lancamentos.add(lancamento);
-                        lancamentosImportados++;
-                    } else {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 5 (Categoria): Categoria não encontrada (valor: " + values[5] + ").");
-                        erros++;
+                    if (categoriaStr != null && !categoriaStr.trim().isEmpty()) {
+                        Optional<Categoria> categoriaOptional = categoriaServiceImpl.obterPorDescricao(categoriaStr.trim());
+                        if (categoriaOptional.isPresent()) {
+                            categoria = categoriaOptional.get();
+                        } else {
+                            mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 5 (Categoria): Categoria não encontrada (valor: " + categoriaStr + ").");
+                            erros++;
+                            continue; // Pula para a próxima linha
+                        }
                     }
+
+                    // Criação do lançamento
+                    Lancamento lancamento = new Lancamento();
+                    lancamento.setDescricao(descricao);
+                    lancamento.setMes(mes);
+                    lancamento.setAno(ano);
+                    lancamento.setValor(valor);
+                    lancamento.setTipo(TipoLancamento.valueOf(tipo));
+                    lancamento.setCategoria(categoria); // Categoria pode ser null ou string vazia
+                    lancamento.setStatus(StatusLancamento.PENDENTE);
+
+                    Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
+                            .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                    lancamento.setUsuario(usuario);
+
+                    lancamentos.add(lancamento);
+                    lancamentosImportados++;
                 } catch (Exception e) {
                     mensagensErros.add("Erro ao processar linha " + linhaAtual + ": " + Arrays.toString(values) + " - " + e.getMessage());
                     erros++;
@@ -226,4 +241,5 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
+
 }
