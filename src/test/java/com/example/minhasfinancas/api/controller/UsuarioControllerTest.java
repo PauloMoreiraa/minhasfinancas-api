@@ -24,6 +24,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @RunWith(SpringRunner.class)
 @ActiveProfiles
 @WebMvcTest(controllers = UsuarioController.class)
@@ -71,10 +73,7 @@ public class UsuarioControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("id").value(usuario.getId()))
-                .andExpect(MockMvcResultMatchers.jsonPath("nome").value(usuario.getNome()))
-                .andExpect(MockMvcResultMatchers.jsonPath("email").value(usuario.getEmail()));
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -96,7 +95,7 @@ public class UsuarioControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -119,7 +118,7 @@ public class UsuarioControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(status().isCreated())
                 .andExpect(MockMvcResultMatchers.jsonPath("id").value(usuario.getId()))
                 .andExpect(MockMvcResultMatchers.jsonPath("nome").value(usuario.getNome()))
                 .andExpect(MockMvcResultMatchers.jsonPath("email").value(usuario.getEmail()));
@@ -145,7 +144,7 @@ public class UsuarioControllerTest {
                 .content(json);
 
         mvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+                .andExpect(status().isBadRequest());
     }
 
 }

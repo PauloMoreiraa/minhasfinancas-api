@@ -1,7 +1,6 @@
 package com.example.minhasfinancas.service;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
-import com.example.minhasfinancas.exception.RegraNegocioException;
 import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.repository.CategoriaRepository;
 import com.example.minhasfinancas.service.impl.CategoriaServiceImpl;

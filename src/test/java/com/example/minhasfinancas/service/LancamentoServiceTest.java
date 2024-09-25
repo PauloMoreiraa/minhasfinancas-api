@@ -3,7 +3,6 @@ package com.example.minhasfinancas.service;
 import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
-import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
@@ -17,8 +16,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -33,7 +30,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -66,7 +62,8 @@ public class LancamentoServiceTest {
 
     @Autowired
     private CategoriaServiceImpl categoriaServiceImpl;
-
+    @Autowired
+    private LancamentoRepository lancamentoRepository;
 
 
     @Test

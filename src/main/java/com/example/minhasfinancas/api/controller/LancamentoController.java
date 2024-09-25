@@ -39,27 +39,6 @@ public class LancamentoController {
 
 
 //    Endpoint para buscar lançamento
-//    @GetMapping
-//    public ResponseEntity buscar(
-//            @RequestParam(value = "descricao", required = false) String descricao,
-//            @RequestParam(value = "mes", required = false) Integer mes,
-//            @RequestParam(value = "ano", required = false) Integer ano,
-//            @RequestParam("usuario") Long idUsuario
-//    ) {
-//        Lancamento lancamentoFiltro = new Lancamento();
-//        lancamentoFiltro.setDescricao(descricao);
-//        lancamentoFiltro.setMes(mes);
-//        lancamentoFiltro.setAno(ano);
-//
-//        Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
-//        if(!usuario.isPresent()) {
-//            return ResponseEntity.badRequest().body("Não foi possível realizar a consulta. Usuário não encontrado para o Id informado.");
-//        }else{
-//            lancamentoFiltro.setUsuario(usuario.get());
-//        }
-//        List<Lancamento> lancamentos = service.buscar(lancamentoFiltro);
-//        return ResponseEntity.ok(lancamentos);
-//    }
 
     @GetMapping
     public ResponseEntity buscar(
@@ -109,13 +88,8 @@ public class LancamentoController {
     @PostMapping
     public ResponseEntity salvar(@RequestBody LancamentoDTO dto) {
         try {
-            // Verifica se o Id da categoria é nulo
-            if (dto.getCategoriaId() == null) {
-                return ResponseEntity.badRequest().body("A categoria não pode ser nula.");
-            }
-
-            // Verifica se a categoria existe
-            if (!categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
+            // Verifica se a categoria existe, se o Id não for nulo
+            if (dto.getCategoriaId() != null && !categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
                 return ResponseEntity.badRequest().body("Categoria não encontrada, crie ou altere a categoria desejada.");
             }
 
@@ -126,6 +100,7 @@ public class LancamentoController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 
     //Endpoint de atualizar/editar o lançamento
     @PutMapping("{id}")
@@ -238,7 +213,6 @@ public class LancamentoController {
                 .build();
     }
 
-    //Endpoint de coverter categoria
     private Lancamento converter(LancamentoDTO dto) {
         Lancamento lancamento = new Lancamento();
         lancamento.setId(dto.getId());
@@ -253,16 +227,15 @@ public class LancamentoController {
                 .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado para o Id informado."));
         lancamento.setUsuario(usuario);
 
-        // Verifica se a categoria é válida
-        if (dto.getCategoriaId() == null || !categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
-            throw new RegraNegocioException("A categoria não pode ser nula ou inválida.");
+        // Se o categoriaId for fornecido, verifica se a categoria existe
+        if (dto.getCategoriaId() != null) {
+            Categoria categoria = categoriaService.obterPorId(dto.getCategoriaId())
+                    .orElseThrow(() -> new RegraNegocioException("Categoria não encontrada para o Id informado."));
+            lancamento.setCategoria(categoria);
+        } else {
+            // Se não houver categoriaId, define a categoria como null
+            lancamento.setCategoria(null);
         }
-
-        // Se a categoria é válida, busca e define no lançamento
-        Categoria categoria = categoriaService.obterPorId(dto.getCategoriaId()).orElseThrow(
-                () -> new RegraNegocioException("Categoria não encontrada para o Id informado.")
-        );
-        lancamento.setCategoria(categoria);
 
         if (dto.getTipo() != null) {
             lancamento.setTipo(TipoLancamento.valueOf(dto.getTipo()));
@@ -273,6 +246,7 @@ public class LancamentoController {
 
         return lancamento;
     }
+
 
 
     //Endpoint de Upload de Arquivo CSV
@@ -292,16 +266,25 @@ public class LancamentoController {
             @RequestParam(value = "descricao", required = false) String descricao,
             @RequestParam(value = "mes", required = false) Integer mes,
             @RequestParam(value = "ano", required = false) Integer ano,
-            @RequestParam("usuario") Long idUsuario
+            @RequestParam(value = "usuario", required = true) Long idUsuario // Parâmetro 'usuario' agora é obrigatório
     ) {
-        // Verificar se o ID do usuário é válido
+        // Verificar se o ID do usuário foi passado e é válido
         if (idUsuario == null || idUsuario <= 0) {
-            return ResponseEntity.badRequest().body("ID de usuário inválido.");
+            return ResponseEntity.badRequest().body("ID de usuário é obrigatório e deve ser um valor positivo.");
         }
 
-        // Verificar se os parâmetros mês e ano são válidos
-        if ((mes != null && (mes < 1 || mes > 12)) || (ano != null && ano < 0)) {
-            return ResponseEntity.badRequest().body("Mês ou ano inválido.");
+        // Verificar se o mês é válido
+        if (mes != null) {
+            if (mes < 1 || mes > 12) {
+                return ResponseEntity.badRequest().body("Mês inválido.");
+            }
+        }
+
+        // Verificar se o ano é válido
+        if (ano != null) {
+            if (ano < 1000 || ano > 3000) {
+                return ResponseEntity.badRequest().body("Ano inválido.");
+            }
         }
 
         Lancamento lancamentoFiltro = new Lancamento();
@@ -343,5 +326,6 @@ public class LancamentoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar o arquivo JSON: " + e.getMessage());
         }
     }
+
 
 }

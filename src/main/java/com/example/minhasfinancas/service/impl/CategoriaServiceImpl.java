@@ -23,20 +23,23 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Override
     @Transactional
     public Categoria salvar(Categoria categoria) {
-        // Valida a categoria antes de salvar
-        if (categoria == null || categoria.getDescricao() == null || categoria.getDescricao().isEmpty()) {
-            throw new IllegalArgumentException("A categoria não pode ser nula e deve ter uma descrição válida.");
+        // Valida a descrição da categoria, se ela estiver presente
+        if (categoria != null && categoria.getDescricao() != null && categoria.getDescricao().isEmpty()) {
+            throw new IllegalArgumentException("A categoria deve ter uma descrição válida se fornecida.");
         }
 
-        // Verifica se a categoria com a mesma descrição já existe
-        Optional<Categoria> categoriaExistente = repository.findByDescricao(categoria.getDescricao());
-        if (categoriaExistente.isPresent()) {
-            throw new IllegalArgumentException("Já existe uma categoria com a descrição: " + categoria.getDescricao());
+        // Verifica se a categoria com a mesma descrição já existe, se a descrição estiver presente
+        if (categoria != null) {
+            Optional<Categoria> categoriaExistente = repository.findByDescricao(categoria.getDescricao());
+            if (categoriaExistente.isPresent()) {
+                throw new IllegalArgumentException("Já existe uma categoria com a descrição: " + categoria.getDescricao());
+            }
         }
 
         // Salva a categoria no banco de dados
         return repository.save(categoria);
     }
+
 
     public Optional<Categoria> obterPorId(Long id) {
         return repository.findById(id);
