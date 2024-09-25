@@ -33,6 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.doThrow;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -90,7 +92,7 @@ public class LancamentoServiceTest {
     public void naoDeveSalvarUmLancamentoQuandoHouverErroDeValidacao() {
         //cenario
         Lancamento lancamentoASalvar = LancamentoRepositoryTest.criarLancamento();
-        Mockito.doThrow(RegraNegocioException.class).when(service).validar(lancamentoASalvar);
+        doThrow(RegraNegocioException.class).when(service).validar(lancamentoASalvar);
 
         //execucao e verificacao
         Assertions.catchThrowableOfType(()-> service.salvar(lancamentoASalvar), RegraNegocioException.class);

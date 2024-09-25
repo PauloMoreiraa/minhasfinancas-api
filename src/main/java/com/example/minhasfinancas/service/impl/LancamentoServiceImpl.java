@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -135,6 +136,12 @@ public class LancamentoServiceImpl implements LancamentoService {
             throw new IllegalArgumentException("Arquivo CSV está vazio!");
         }
 
+        // Verifica a extensão do arquivo
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.endsWith(".csv")) {
+            throw new IllegalArgumentException("O arquivo deve ter a extensão .csv!");
+        }
+
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
             String[] values;
             int linhaAtual = 0; // Contador para a linha atual no CSV (inicia após o cabeçalho)
@@ -241,5 +248,7 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
+
+
 
 }
