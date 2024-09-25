@@ -1,32 +1,46 @@
 package com.example.minhasfinancas.service;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
+import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.model.repository.LancamentoRepositoryTest;
+import com.example.minhasfinancas.service.impl.CategoriaServiceImpl;
 import com.example.minhasfinancas.service.impl.LancamentoServiceImpl;
+import com.example.minhasfinancas.service.impl.UsuarioServiceImpl;
+import com.opencsv.exceptions.CsvValidationException;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.domain.Example;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -41,6 +55,17 @@ public class LancamentoServiceTest {
 
     @MockBean
     LancamentoRepository repository;
+
+    @Autowired
+    private LancamentoServiceImpl lancamentoServiceImpl;
+
+    @Autowired
+    private UsuarioServiceImpl usuarioServiceImpl;
+
+    @Autowired
+    private CategoriaServiceImpl categoriaServiceImpl;
+
+
 
     @Test
     public void deveSalvarUmLancamento() {
@@ -87,7 +112,7 @@ public class LancamentoServiceTest {
             Assert.fail("Esperava uma exceção ao tentar atualizar um lançamento sem usuário.");
         } catch (RegraNegocioException e) {
             // Verifica se a exceção correta foi lançada
-            Assert.assertEquals("Informe um Usuário.", e.getMessage());
+            assertEquals("Informe um Usuário.", e.getMessage());
         }
 
         // Verificacao
@@ -317,4 +342,146 @@ public class LancamentoServiceTest {
         Assertions.assertThat(erro).isInstanceOf(RegraNegocioException.class).hasMessage("Informe um tipo de Lançamento.");
     }
 
+    //testes CSV
+    @Test(expected = IllegalArgumentException.class)
+    public void deveLancarErroQuandoArquivoCSVEstiverVazio() throws CsvValidationException, IOException {
+        // Cenario
+        MultipartFile file = Mockito.mock(MultipartFile.class);
+        Mockito.when(file.isEmpty()).thenReturn(true);
+
+        Long usuarioId = 1L;
+
+        // Execução
+        service.importarLancamentosCSV(file, usuarioId);
+    }
+
+    @Test
+    public void deveLancarExcecaoQuandoArquivoCSVPossuiMenosDeSeisColunas() {
+        // Cenario
+        MultipartFile arquivoCSV = new MockMultipartFile("arquivo.csv", "linha1\nlinha2\n".getBytes());
+
+        // Execucao e Verificacao
+        Assertions.catchThrowableOfType(() -> service.importarLancamentosCSV(arquivoCSV, 1L), IllegalArgumentException.class);
+    }
+
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComNumeroIncorretoDeColunas() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo\n" + // Cabeçalho
+                "Salario,5,2024,3000,RECEITA\n" + // Linha 1 (válida)
+                "Despesa,6,2024,-1000,DESPESA\n"; // Linha 2 (inválida - 5 colunas)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("Erro na linha 2: número incorreto de colunas (exigido: 6, encontrado: 5).");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComDescricaoInvalida() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+                ",5,2024,3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - descrição vazia)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("Erro na linha 1, coluna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComMesInvalido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+                "Salario,13,2024,3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - mês fora do intervalo)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("Erro na linha 1, coluna 1 (Mês): Mês inválido (valor: 13).");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComValorNegativo() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+                "Salario,5,2024,-3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - valor negativo)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("Erro na linha 1, coluna 3 (Valor): Valor não pode ser negativo (valor: -3000).");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComAnoInvalido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+                "Salario,5,100,3000,RECEITA,\n"; // Linha 1 (inválida - ano fora do intervalo)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("Erro na linha 1, coluna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: 100).");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComTipoInvalido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+                "Salario,5,2024,3000,RTA,\n"; // Linha 1 (inválida - ano fora do intervalo)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("Erro na linha 1, coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: RTA).");
+    }
 }
