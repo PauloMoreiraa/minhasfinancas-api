@@ -9,6 +9,7 @@ import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.model.repository.LancamentoRepositoryTest;
 import com.example.minhasfinancas.service.impl.LancamentoServiceImpl;
 import org.assertj.core.api.Assertions;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -74,6 +75,28 @@ public class LancamentoServiceTest {
     }
 
     @Test
+    public void naoDeveAtualizarUmLancamentoSeUsuarioNaoForInformado() {
+        // Cenario
+        Lancamento lancamentoSemUsuario = LancamentoRepositoryTest.criarLancamento();
+        lancamentoSemUsuario.setId(1L);
+        lancamentoSemUsuario.setUsuario(null); // Define o usuário como nulo
+
+        // Execucao e Verificacao
+        try {
+            service.atualizar(lancamentoSemUsuario);
+            Assert.fail("Esperava uma exceção ao tentar atualizar um lançamento sem usuário.");
+        } catch (RegraNegocioException e) {
+            // Verifica se a exceção correta foi lançada
+            Assert.assertEquals("Informe um Usuário.", e.getMessage());
+        }
+
+        // Verificacao
+        Mockito.verify(repository, Mockito.never()).save(lancamentoSemUsuario);
+    }
+
+
+
+    @Test
     public void deveAtualizarUmLancamento() {
         //cenario
         Lancamento lancamentoSalvo = LancamentoRepositoryTest.criarLancamento();
@@ -90,6 +113,38 @@ public class LancamentoServiceTest {
         //verificacao
         Mockito.verify(repository, Mockito.times(1)).save(lancamentoSalvo);
     }
+
+    @Test(expected = RegraNegocioException.class)
+    public void naoDeveAtualizarUmLancamentoSeStatusForCancelado() {
+        // Cenário
+        Lancamento lancamentoCancelado = LancamentoRepositoryTest.criarLancamento();
+        lancamentoCancelado.setId(1L);
+        lancamentoCancelado.setStatus(StatusLancamento.CANCELADO); // Define o status como CANCELADO
+
+        // Execução
+        service.atualizar(lancamentoCancelado);
+
+        // Se a exceção for lançada, o teste passa.
+        // Verificação
+        Mockito.verify(repository, Mockito.never()).save(lancamentoCancelado);
+    }
+
+    @Test(expected = RegraNegocioException.class)
+    public void naoDeveAtualizarUmLancamentoSeStatusForEfetivado() {
+        // Cenário
+        Lancamento lancamentoCancelado = LancamentoRepositoryTest.criarLancamento();
+        lancamentoCancelado.setId(1L);
+        lancamentoCancelado.setStatus(StatusLancamento.EFETIVADO); // Define o status como CANCELADO
+
+        // Execução
+        service.atualizar(lancamentoCancelado);
+
+        // Se a exceção for lançada, o teste passa.
+        // Verificação
+        Mockito.verify(repository, Mockito.never()).save(lancamentoCancelado);
+    }
+
+
 
     @Test
     public void deveLancarErroAoTentarAtualizarUmLancamentoQueAindaNaoFoiSalvo() {
@@ -261,4 +316,5 @@ public class LancamentoServiceTest {
         erro = Assertions.catchThrowable(()-> service.validar(lancamento));
         Assertions.assertThat(erro).isInstanceOf(RegraNegocioException.class).hasMessage("Informe um tipo de Lançamento.");
     }
+
 }
