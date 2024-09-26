@@ -483,4 +483,5 @@ public class LancamentoServiceTest {
         Assertions.assertThat(resultado.getMensagensErros())
                 .contains("Erro na linha 1, coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: RTA).");
     }
+
 }

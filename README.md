@@ -9,7 +9,7 @@ Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada p
 ## 🧪 Cobertura de Testes
 
 - 53 testes funcionais 
-- 28% de cobertura de testes no sistema
+- 52,75% de cobertura de testes no sistema
 
 ## 🚀 Tecnologias Utilizadas
 

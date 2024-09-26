@@ -153,5 +153,7 @@ public class LancamentoControllerTest {
         // Verificação: Status deve ser NO_CONTENT
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
+
+
 }
 
