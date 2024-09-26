@@ -266,6 +266,8 @@ public class LancamentoController {
             @RequestParam(value = "descricao", required = false) String descricao,
             @RequestParam(value = "mes", required = false) Integer mes,
             @RequestParam(value = "ano", required = false) Integer ano,
+            @RequestParam(value = "categoriaId", required = false) Long categoriaId,
+            @RequestParam(value = "tipo", required = false) String tipo,
             @RequestParam(value = "usuario", required = true) Long idUsuario // Parâmetro 'usuario' agora é obrigatório
     ) {
         // Verificar se o ID do usuário foi passado e é válido
@@ -298,6 +300,17 @@ public class LancamentoController {
             return ResponseEntity.badRequest().body("Usuário não encontrado para o ID informado.");
         }
         lancamentoFiltro.setUsuario(usuario.get());
+
+        if(categoriaId != null) {
+            Categoria categoria = new Categoria();
+            categoria.setId(categoriaId);
+            lancamentoFiltro.setCategoria(categoria);
+        }
+
+        if(tipo != null){
+            TipoLancamento tipoLancamento = TipoLancamento.valueOf(tipo);
+            lancamentoFiltro.setTipo(tipoLancamento);
+        }
 
         // Buscar lançamentos com o filtro
         List<Lancamento> lancamentos;
