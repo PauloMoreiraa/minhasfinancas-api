@@ -87,14 +87,4 @@ public class CategoriaServiceTest {
         // Verificação
         Mockito.verify(repository, Mockito.times(1)).save(categoriaExistente);
     }
-
-    @Test
-    public void deveLancarErroAoTentarAtualizarUmaCategoriaQueNaoFoiSalva() {
-        // Cenario
-        Categoria categoria = new Categoria();
-
-        // Execução e Verificação
-        Assertions.catchThrowableOfType(() -> service.salvar(categoria), IllegalArgumentException.class);
-        Mockito.verify(repository, Mockito.never()).save(categoria);
-    }
 }

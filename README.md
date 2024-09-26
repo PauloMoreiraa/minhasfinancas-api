@@ -4,19 +4,27 @@
 
 Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada para simplificar o gerenciamento de finanças pessoais. Esta API permite aos usuários acompanhar suas finanças de maneira eficiente, oferecendo funcionalidades para o registro e a análise de ganhos e gastos.
 
-🌐 [Projeto FrontEnd](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front?path=%2F&version=GBdevelop&_a=contents)
+🌐 [Projeto FrontEnd](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front?path=%2F&version=GBrelease&_a=contents)
 
 ## 🧪 Cobertura de Testes
 
-- 22 testes
+- 53 testes funcionais 
+- 28% de cobertura de testes no sistema
 
 ## 🚀 Tecnologias Utilizadas
 
 - Java 1.8
 - Spring Boot 2.1.8.RELEASE
+- Spring Data JPA
+- Spring Web
+- Spring Security
+- Spring Boot DevTools
+- Spring Boot Test
+- PostgreSQL
+- H2 Database (para testes)
 - Lombok 1.18.34
-- JSON Webtoken 0.9.1
-- Postgresql 9.4
+- JSON Web Token (JWT) 0.9.1
+- OpenCSV 5.5.2
 
 ## 📄 Pré-requisitos
 
@@ -52,6 +60,7 @@ Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada p
 
 Abaixo está a descrição dos principais endpoints da API:
 
+## Usuários
 
 ### **1. GET /api/usuarios**
 
@@ -139,3 +148,193 @@ Abaixo está a descrição dos principais endpoints da API:
 - **Resposta:**
   - **204 No Content**
   - **404 Not Found** (se o usuário não for encontrado)
+  
+---
+
+## Lançamentos
+
+### **1. GET /api/lancamentos**
+
+- **Descrição:** Busca uma lista de lançamentos filtrados por critérios específicos.
+- **Parâmetros de Consulta:**
+  - `descricao` (opcional): Descrição do lançamento.
+  - `mes` (opcional): Mês do lançamento.
+  - `ano` (opcional): Ano do lançamento.
+  - `categoriaId` (opcional): ID da categoria do lançamento.
+  - `tipo` (opcional): Tipo do lançamento ("RECEITA" ou "DESPESA").
+  - `usuario` (obrigatório): ID do usuário.
+- **Resposta:**
+  - **200 OK**
+    ```json
+    [
+      {
+        "id": 1,
+        "descricao": "Venda",
+        "mes": 9,
+        "ano": 2024,
+        "valor": 1500.00,
+        "tipo": "RECEITA",
+        "status": "EFETIVADO",
+        "categoria": {
+          "id": 1,
+          "nome": "Vendas"
+        }
+      },
+      // ...
+    ]
+    ```
+
+### **2. GET /api/lancamentos/{id}**
+
+- **Descrição:** Retorna os detalhes de um lançamento específico pelo ID.
+- **Parâmetros de URL:**
+  - `id`: ID do lançamento.
+- **Resposta:**
+  - **200 OK**
+    ```json
+    {
+      "id": 1,
+      "descricao": "Venda",
+      "mes": 9,
+      "ano": 2024,
+      "valor": 1500.00,
+      "tipo": "RECEITA",
+      "status": "EFETIVADO",
+      "categoria": {
+        "id": 1,
+        "nome": "Vendas"
+      }
+    }
+    ```
+
+### **3. POST /api/lancamentos**
+
+- **Descrição:** Salva um novo lançamento.
+- **Corpo da Requisição:** `LancamentoDTO`
+- **Resposta:**
+  - **201 Created**
+    ```json
+    {
+      "id": 1,
+      "descricao": "Venda",
+      "mes": 9,
+      "ano": 2024,
+      "valor": 1500.00,
+      "tipo": "RECEITA",
+      "status": "PENDENTE",
+      "categoria": {
+        "id": 1,
+        "nome": "Vendas"
+      }
+    }
+    ```
+
+### **4. PUT /api/lancamentos/{id}**
+
+- **Descrição:** Atualiza um lançamento existente.
+- **Parâmetros de URL:**
+  - `id`: ID do lançamento.
+- **Corpo da Requisição:** `LancamentoDTO`
+- **Resposta:**
+  - **200 OK**
+    ```json
+    {
+      "id": 1,
+      "descricao": "Venda Atualizada",
+      "mes": 9,
+      "ano": 2024,
+      "valor": 2000.00,
+      "tipo": "RECEITA",
+      "status": "PENDENTE",
+      "categoria": {
+        "id": 1,
+        "nome": "Vendas"
+      }
+    }
+    ```
+
+### **5. PUT /api/lancamentos/{id}/atualiza-status**
+
+- **Descrição:** Atualiza o status de um lançamento.
+- **Parâmetros de URL:**
+  - `id`: ID do lançamento.
+- **Corpo da Requisição:** `AtualizaStatusDTO`
+- **Resposta:**
+  - **200 OK**
+    ```json
+    {
+      "id": 1,
+      "status": "EFETIVADO"
+    }
+    ```
+
+### **6. DELETE /api/lancamentos/{id}**
+
+- **Descrição:** Deleta um lançamento específico pelo ID.
+- **Parâmetros de URL:**
+  - `id`: ID do lançamento.
+- **Resposta:**
+  - **204 No Content**
+
+### **7. POST /api/lancamentos/{id}/importar**
+
+- **Descrição:** Importa lançamentos a partir de um arquivo CSV.
+- **Parâmetros de URL:**
+  - `id`: ID do usuário.
+- **Corpo da Requisição:** Arquivo CSV.
+- **Resposta:**
+  - **201 Created**
+    ```json
+    {
+      "message": "Lançamentos importados com sucesso."
+    }
+    ```
+
+### **8. GET /api/lancamentos/download**
+
+- **Descrição:** Realiza o download dos lançamentos filtrados em formato JSON.
+- **Parâmetros de Consulta:**
+  - `descricao` (opcional): Descrição do lançamento.
+  - `mes` (opcional): Mês do lançamento.
+  - `ano` (opcional): Ano do lançamento.
+  - `usuario` (obrigatório): ID do usuário.
+- **Resposta:**
+  - **200 OK**
+    ```json
+    [
+      {
+        "id": 1,
+        "descricao": "Venda",
+        "mes": 9,
+        "ano": 2024,
+        "valor": 1500.00,
+        "tipo": "RECEITA",
+        "status": "EFETIVADO",
+        "categoria": {
+          "id": 1,
+          "nome": "Vendas"
+        }
+      },
+      // ...
+    ]
+    ```
+
+---
+
+## Categorias
+
+### **1. POST /api/categorias**
+
+- **Descrição:** Salva uma nova categoria.
+- **Corpo da Requisição:** `CategoriaDTO`
+- **Resposta:**
+  - **201 Created**
+    ```json
+    {
+      "id": 1,
+      "nome": "Vendas"
+    }
+    ```
+
+
+
