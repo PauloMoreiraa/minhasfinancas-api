@@ -198,8 +198,8 @@ public class LancamentoController {
                 new ResponseEntity("Lançamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
     }
 
-    private LancamentoDTO converter(Lancamento lancamento){
-        //cria um objeto lançamentoDTO usando o padrão do projeto builder
+    private LancamentoDTO converter(Lancamento lancamento) {
+        // cria um objeto lançamentoDTO usando o padrão do projeto builder
         return LancamentoDTO.builder()
                 .id(lancamento.getId())
                 .descricao(lancamento.getDescricao())
@@ -209,9 +209,11 @@ public class LancamentoController {
                 .status(lancamento.getStatus().name())
                 .tipo(lancamento.getTipo().name())
                 .usuario(lancamento.getUsuario().getId())
-                .categoriaId(lancamento.getCategoria().getId())
+                // Verifica se a categoria não é nula antes de acessar o ID
+                .categoriaId(lancamento.getCategoria() != null ? lancamento.getCategoria().getId() : null)
                 .build();
     }
+
 
     private Lancamento converter(LancamentoDTO dto) {
         Lancamento lancamento = new Lancamento();
@@ -328,13 +330,13 @@ public class LancamentoController {
         // Converter os lançamentos para JSON e retornar
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            objectMapper.writeValue(outputStream, lancamentos);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();//armazena arrays em bytes de memmória
+            objectMapper.writeValue(outputStream, lancamentos);//converte para json
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=lancamentos.json")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(outputStream.toByteArray());
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=lancamentos.json")//mostra que é um arquivo json para download
+                    .contentType(MediaType.APPLICATION_JSON)//indica que a resposta contém dados no formato JSON.
+                    .body(outputStream.toByteArray());//Converte o conteúdo do ByteArrayOutputStream em um array de bytes e define isso como o corpo da resposta HTTP
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar o arquivo JSON: " + e.getMessage());
         }

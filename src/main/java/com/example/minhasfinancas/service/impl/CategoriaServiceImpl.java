@@ -7,6 +7,7 @@ import com.example.minhasfinancas.service.CategoriaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,6 +41,10 @@ public class CategoriaServiceImpl implements CategoriaService {
         return repository.save(categoria);
     }
 
+    @Override
+    public List<Categoria> listar() {
+        return repository.findAll();
+    }
 
     public Optional<Categoria> obterPorId(Long id) {
         return repository.findById(id);
