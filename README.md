@@ -4,7 +4,7 @@
 
 Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada para simplificar o gerenciamento de finanças pessoais. Esta API permite aos usuários acompanhar suas finanças de maneira eficiente, oferecendo funcionalidades para o registro e a análise de ganhos e gastos.
 
-🌐 [Projeto FrontEnd](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front?path=%2F&version=GBrelease&_a=contents)
+🌐 [Projeto FrontEnd](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front)
 
 ## 🧪 Cobertura de Testes
 
