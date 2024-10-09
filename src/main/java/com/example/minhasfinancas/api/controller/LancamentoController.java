@@ -270,7 +270,7 @@ public class LancamentoController {
             @RequestParam(value = "ano", required = false) Integer ano,
             @RequestParam(value = "categoriaId", required = false) Long categoriaId,
             @RequestParam(value = "tipo", required = false) String tipo,
-            @RequestParam(value = "usuario", required = true) Long idUsuario // Parâmetro 'usuario' agora é obrigatório
+            @RequestParam(value = "usuario", required = true) Long idUsuario
     ) {
         // Verificar se o ID do usuário foi passado e é válido
         if (idUsuario == null || idUsuario <= 0) {

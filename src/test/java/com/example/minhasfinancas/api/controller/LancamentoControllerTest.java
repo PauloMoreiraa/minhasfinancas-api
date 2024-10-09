@@ -97,7 +97,7 @@ public class LancamentoControllerTest {
     @Test
     public void naoDeveBaixarLancamentosComMesInvalido() {
         // Ação
-        ResponseEntity response = lancamentoController.downloadLancamentos("Teste", 13, 2024, 1L);
+        ResponseEntity response = lancamentoController.downloadLancamentos("Teste", 13, 2024, null, "DESPESA", 1L);
 
         // Verificação
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -107,7 +107,7 @@ public class LancamentoControllerTest {
     @Test
     public void naoDeveBaixarLancamentosComAnoInvalido() {
         // Ação
-        ResponseEntity response = lancamentoController.downloadLancamentos("Teste", 12, 024, 1L);
+        ResponseEntity response = lancamentoController.downloadLancamentos("Teste", 12, 024, null, "DESPESA", 1L);
 
         // Verificação
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -128,7 +128,7 @@ public class LancamentoControllerTest {
         Mockito.when(service.buscar(Mockito.any())).thenReturn(Collections.singletonList(lancamento));
 
         // Ação: Realiza o download dos lançamentos
-        ResponseEntity<?> response = lancamentoController.downloadLancamentos("Lançamento Teste", null, null, 1L);
+        ResponseEntity<?> response = lancamentoController.downloadLancamentos("Lançamento Teste", null, null, null, "DESPESA", 1L);
 
         // Verificação: O status da resposta deve ser OK (200)
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -148,7 +148,7 @@ public class LancamentoControllerTest {
         Mockito.when(service.buscar(Mockito.any())).thenReturn(Collections.emptyList());
 
         // Ação: Tentar baixar lançamentos
-        ResponseEntity<?> response = lancamentoController.downloadLancamentos("Teste", null, null, 1L);
+        ResponseEntity<?> response = lancamentoController.downloadLancamentos("Teste", null, null, null, "DESPESA", 1L);
 
         // Verificação: Status deve ser NO_CONTENT
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
