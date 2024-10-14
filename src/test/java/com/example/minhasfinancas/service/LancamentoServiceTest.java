@@ -467,7 +467,7 @@ public class LancamentoServiceTest {
     @Test
     public void deveLancarErroAoImportarLancamentosComTipoInvalido() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" +
                 "Salario,5,2024,3000,RTA,\n"; // Linha 1 (inválida - ano fora do intervalo)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
@@ -483,5 +483,4 @@ public class LancamentoServiceTest {
         Assertions.assertThat(resultado.getMensagensErros())
                 .contains("Erro na linha 1, coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: RTA).");
     }
-
 }

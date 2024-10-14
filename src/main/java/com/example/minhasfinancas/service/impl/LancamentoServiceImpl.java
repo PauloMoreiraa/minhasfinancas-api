@@ -77,22 +77,22 @@ public class LancamentoServiceImpl implements LancamentoService {
     @Override
     public void validar(Lancamento lancamento) {
 
-        if(lancamento.getDescricao() == null || lancamento.getDescricao().trim().equals("")){
+        if (lancamento.getDescricao() == null || lancamento.getDescricao().trim().equals("")) {
             throw new RegraNegocioException("Informe uma Descrição válida.");
         }
-        if(lancamento.getMes() == null || lancamento.getMes() < 1 || lancamento.getMes() > 12){
+        if (lancamento.getMes() == null || lancamento.getMes() < 1 || lancamento.getMes() > 12) {
             throw new RegraNegocioException("Informe um Mês válido.");
         }
-        if(lancamento.getAno() == null || lancamento.getAno().toString().length() != 4){
+        if (lancamento.getAno() == null || lancamento.getAno().toString().length() != 4) {
             throw new RegraNegocioException("Informe um Ano válido.");
         }
-        if(lancamento.getUsuario() == null || lancamento.getUsuario().getId() == null){
+        if (lancamento.getUsuario() == null || lancamento.getUsuario().getId() == null) {
             throw new RegraNegocioException("Informe um Usuário.");
         }
-        if (lancamento.getValor() == null || lancamento.getValor().compareTo(BigDecimal.ZERO) < 1){
+        if (lancamento.getValor() == null || lancamento.getValor().compareTo(BigDecimal.ZERO) < 1) {
             throw new RegraNegocioException("Informe um Valor válido.");
         }
-        if (lancamento.getTipo() == null){
+        if (lancamento.getTipo() == null) {
             throw new RegraNegocioException("Informe um tipo de Lançamento.");
         }
     }
@@ -108,10 +108,10 @@ public class LancamentoServiceImpl implements LancamentoService {
         BigDecimal receitas = repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(id, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO);
         BigDecimal despesas = repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(id, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO);
 
-        if(receitas == null){
+        if (receitas == null) {
             receitas = BigDecimal.ZERO;
         }
-        if (despesas == null){
+        if (despesas == null) {
             despesas = BigDecimal.ZERO;
         }
 
@@ -203,8 +203,8 @@ public class LancamentoServiceImpl implements LancamentoService {
                             categoria = categoriaOptional.get();
                         } else {
                             mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 5 (Categoria): Categoria não encontrada (valor: " + categoriaStr + ").");
-                            erros++;
-                            continue; // Pula para a próxima linha
+                            // Ignorar a categoria e definir como null
+                            categoria = null;
                         }
                     }
 
