@@ -126,12 +126,10 @@ public class LancamentoServiceImpl implements LancamentoService {
         int lancamentosImportados = 0;
         int erros = 0;
 
-        // Verifica se o arquivo está vazio
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Arquivo CSV está vazio!");
         }
 
-        // Verifica a extensão do arquivo
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.endsWith(".csv")) {
             throw new IllegalArgumentException("O arquivo deve ter a extensão .csv!");
@@ -139,108 +137,112 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
             String[] values;
-            int linhaAtual = 0; // Contador para a linha atual no CSV (inicia após o cabeçalho)
-            csvReader.readNext(); // Ignorar o cabeçalho
+            csvReader.readNext();
+
+            int linhaAtual = 0;
 
             while ((values = csvReader.readNext()) != null) {
-                linhaAtual++; // Incrementa o número da linha a cada nova iteração
+                linhaAtual++;
+                List<String> errosLinha = new ArrayList<>();
+                boolean categoriaInvalida = false;
+
+                if (values.length != 6) {
+                    mensagensErros.add("Erro(s) na linha " + linhaAtual + ":");
+                    mensagensErros.add("- Número incorreto de colunas (exigido: 6, encontrado: " + values.length + ").");
+                    erros++;
+                    continue; 
+                }
+
+                String descricao = values[0];
+                if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
+                    errosLinha.add("Coluna 1 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+                }
 
                 try {
-                    // Verifica se a linha tem exatamente 6 colunas
-                    if (values.length != 6) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ": número incorreto de colunas (exigido: 6, encontrado: " + values.length + ").");
-                        erros++;
-                        continue; // Pula para a próxima linha
-                    }
-
-                    // Validação da Descrição (Coluna 0)
-                    String descricao = values[0];
-                    if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
-                        erros++;
-                        continue; // Pula para a próxima linha
-                    }
-
-                    // Validação do Mês (Coluna 1)
                     int mes = Integer.parseInt(values[1]);
                     if (mes < 1 || mes > 12) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 1 (Mês): Mês inválido (valor: " + mes + ").");
-                        erros++;
-                        continue; // Pula para a próxima linha
+                        errosLinha.add("Coluna 2 (Mês): Mês inválido (valor: " + mes + ").");
                     }
+                } catch (NumberFormatException e) {
+                    errosLinha.add("Coluna 2 (Mês): Formato inválido.");
+                }
 
-                    // Validação do Ano (Coluna 2)
+                try {
                     int ano = Integer.parseInt(values[2]);
                     if (String.valueOf(ano).length() != 4) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
-                        erros++;
-                        continue; // Pula para a próxima linha
+                        errosLinha.add("Coluna 3 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
                     }
+                } catch (NumberFormatException e) {
+                    errosLinha.add("Coluna 3 (Ano): Formato inválido.");
+                }
 
-                    // Validação do Valor (Coluna 3)
+                try {
                     BigDecimal valor = new BigDecimal(values[3]);
                     if (valor.compareTo(BigDecimal.ZERO) < 0) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 3 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
-                        erros++;
-                        continue; // Pula para a próxima linha
+                        errosLinha.add("Coluna 4 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
                     }
+                } catch (NumberFormatException e) {
+                    errosLinha.add("Coluna 4 (Valor): Formato inválido.");
+                }
 
-                    // Validação do Tipo de Lançamento (Coluna 4)
-                    String tipo = values[4].toUpperCase();
-                    if (!tipo.equals("RECEITA") && !tipo.equals("DESPESA")) {
-                        mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
-                        erros++;
-                        continue; // Pula para a próxima linha
+                String tipo = values[4].toUpperCase();
+                if (!tipo.equals("RECEITA") && !tipo.equals("DESPESA")) {
+                    errosLinha.add("Coluna 5 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
+                }
+
+                String categoriaStr = values[5];
+                Categoria categoria = null;
+
+                if (categoriaStr != null && !categoriaStr.trim().isEmpty()) {
+                    Optional<Categoria> categoriaOptional = categoriaServiceImpl.obterPorDescricao(categoriaStr.trim());
+                    if (categoriaOptional.isPresent()) {
+                        categoria = categoriaOptional.get();
+                    } else {
+                        errosLinha.add("Coluna 6 (Categoria): Categoria não encontrada (valor: " + categoriaStr + ").");
+                        categoriaInvalida = true;
                     }
+                }
 
-                    // Validação da Categoria (Coluna 5) - opcional
-                    String categoriaStr = values[5];
-                    Categoria categoria = null;
-
-                    if (categoriaStr != null && !categoriaStr.trim().isEmpty()) {
-                        Optional<Categoria> categoriaOptional = categoriaServiceImpl.obterPorDescricao(categoriaStr.trim());
-                        if (categoriaOptional.isPresent()) {
-                            categoria = categoriaOptional.get();
-                        } else {
-                            mensagensErros.add("Erro na linha " + linhaAtual + ", coluna 5 (Categoria): Categoria não encontrada (valor: " + categoriaStr + ").");
-                            // Ignorar a categoria e definir como null
-                            categoria = null;
-                        }
+                if (!errosLinha.isEmpty()) {
+                    mensagensErros.add("Erro(s) na linha " + linhaAtual + ":");
+                    for (String erro : errosLinha) {
+                        mensagensErros.add("- " + erro);
                     }
-
-                    // Criação do lançamento
-                    Lancamento lancamento = new Lancamento();
-                    lancamento.setDescricao(descricao);
-                    lancamento.setMes(mes);
-                    lancamento.setAno(ano);
-                    lancamento.setValor(valor);
-                    lancamento.setTipo(TipoLancamento.valueOf(tipo));
-                    lancamento.setCategoria(categoria); // Categoria pode ser null ou string vazia
-                    lancamento.setStatus(StatusLancamento.PENDENTE);
-
-                    Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
-                            .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
-                    lancamento.setUsuario(usuario);
-
-                    lancamentos.add(lancamento);
-                    lancamentosImportados++;
-                } catch (Exception e) {
-                    mensagensErros.add("Erro ao processar linha " + linhaAtual + ": " + Arrays.toString(values) + " - " + e.getMessage());
                     erros++;
+                } else {
+                    lancamentosImportados++;
+                }
+
+                Lancamento lancamento = new Lancamento();
+                lancamento.setDescricao(descricao);
+                lancamento.setMes(Integer.parseInt(values[1]));
+                lancamento.setAno(Integer.parseInt(values[2]));
+                lancamento.setValor(new BigDecimal(values[3]));
+                lancamento.setTipo(TipoLancamento.valueOf(tipo));
+                lancamento.setCategoria(categoria);
+                lancamento.setStatus(StatusLancamento.PENDENTE);
+
+                Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
+                        .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                lancamento.setUsuario(usuario);
+
+                lancamentos.add(lancamento);
+
+                if (categoriaInvalida) {
+                    mensagensErros.add("Linha " + linhaAtual + ": Categoria inválida, o lançamento foi salvo sem categoria.");
                 }
             }
         }
 
-        // Salvando os lançamentos se houverem lançamentos válidos
         if (!lancamentos.isEmpty()) {
             repository.saveAll(lancamentos);
         }
 
-        // Adiciona mensagem de sucesso caso não haja erros
         if (erros == 0) {
             mensagensErros.add("Importação realizada com sucesso! Todos os lançamentos foram importados sem erros.");
         }
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
+
 }
