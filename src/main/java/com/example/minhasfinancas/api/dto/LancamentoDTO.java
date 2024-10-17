@@ -22,5 +22,6 @@ public class LancamentoDTO {
     private String tipo;
     private String status;
     private Long categoriaId;
-
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 }

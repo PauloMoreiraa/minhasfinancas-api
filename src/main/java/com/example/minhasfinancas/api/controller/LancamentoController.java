@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -37,16 +38,13 @@ public class LancamentoController {
     private final UsuarioService usuarioService;
     private final CategoriaService categoriaService;
 
-
-//    Endpoint para buscar lançamento
-
     @GetMapping
     public ResponseEntity buscar(
             @RequestParam(value = "descricao", required = false) String descricao,
             @RequestParam(value = "mes", required = false) Integer mes,
             @RequestParam(value = "ano", required = false) Integer ano,
             @RequestParam(value = "categoriaId", required = false) Long categoriaId,
-            @RequestParam(value = "tipo", required = false) String tipo, // Pode ser "RECEITA" ou "DESPESA"
+            @RequestParam(value = "tipo", required = false) String tipo,
             @RequestParam("usuario") Long idUsuario
     ) {
         Lancamento lancamentoFiltro = new Lancamento();
@@ -61,7 +59,6 @@ public class LancamentoController {
             lancamentoFiltro.setUsuario(usuario.get());
         }
 
-        // Adiciona a categoria e tipo de lançamento no filtro
         if (categoriaId != null) {
             Categoria categoria = new Categoria();
             categoria.setId(categoriaId);
@@ -83,14 +80,11 @@ public class LancamentoController {
                 .orElseGet(()-> new ResponseEntity(HttpStatus.NOT_FOUND));
     }
 
-
-    //Endpoint de salvar
     @PostMapping
     public ResponseEntity salvar(@RequestBody LancamentoDTO dto) {
         try {
-            // Verifica se a categoria existe, se o Id não for nulo
             if (dto.getCategoriaId() != null && !categoriaService.obterPorId(dto.getCategoriaId()).isPresent()) {
-                return ResponseEntity.badRequest().body("Categoria não encontrada, crie ou altere a categoria desejada.");
+                return ResponseEntity.badRequest().body("Categoria não encontrada. O lançamento será salvo sem categoria.");
             }
 
             Lancamento entidade = converter(dto);
@@ -101,13 +95,9 @@ public class LancamentoController {
         }
     }
 
-
-    //Endpoint de atualizar/editar o lançamento
     @PutMapping("{id}")
     public ResponseEntity atualizar(@PathVariable("id") Long id, @RequestBody LancamentoDTO dto) {
-        // Tenta obter o lançamento pelo ID fornecido
         return service.obterPorId(id).map(entity -> {
-            // Verifica se o lançamento está efetivado ou cancelado
             if (entity.getStatus() == StatusLancamento.EFETIVADO || entity.getStatus() == StatusLancamento.CANCELADO) {
                 return ResponseEntity.badRequest().body("Não é possível atualizar um lançamento que já foi efetivado ou cancelado.");
             }
@@ -124,18 +114,13 @@ public class LancamentoController {
                 new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
 
-
-    //Endpoint para atualizar o status do lançamento
     @PutMapping("{id}/atualiza-status")
     public ResponseEntity atualizarStatus(@PathVariable("id") Long id, @RequestBody AtualizaStatusDTO dto) {
-        // Obtém o lançamento pelo ID fornecido
         return service.obterPorId(id).map(entity -> {
-            // Verifica se o status está nulo ou vazio
             if (dto.getStatus() == null || dto.getStatus().isEmpty()) {
                 return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
 
-            // Tenta converter o status recebido no DTO para um enum StatusLancamento
             StatusLancamento statusSelecionado;
 
             try {
@@ -144,32 +129,25 @@ public class LancamentoController {
                 return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
 
-            // Verifica se o status é válido
             if (statusSelecionado != StatusLancamento.EFETIVADO && statusSelecionado != StatusLancamento.CANCELADO) {
                 return ResponseEntity.badRequest().body("Não foi possível atualizar o status do lançamento, envie um status válido.");
             }
 
-            // Se o status é EFETIVADO, verifica se a data do lançamento é futura
             if (statusSelecionado == StatusLancamento.EFETIVADO && isDataFutura(entity)) {
                 return ResponseEntity.badRequest().body("O lançamento não pode ser efetivado com data futura.");
             }
 
             try {
-                // Atualiza o status do lançamento
                 entity.setStatus(statusSelecionado);
-                // Persiste a atualização no banco de dados
                 service.atualizar(entity);
-                // Retorna a entidade atualizada com um status de sucesso
                 return ResponseEntity.ok(entity);
             } catch (RegraNegocioException e) {
-                // Se ocorrer um erro de negócio, retorna um erro de solicitação ruim com a mensagem de erro
                 return ResponseEntity.badRequest().body(e.getMessage());
             }
         }).orElseGet(() ->
                 new ResponseEntity("Lançamento não encontrado na base de dados.", HttpStatus.BAD_REQUEST));
     }
 
-    // Verifica a data do lançamento
     private boolean isDataFutura(Lancamento lancamento) {
         LocalDate hoje = LocalDate.now();
         int anoAtual = hoje.getYear();
@@ -178,17 +156,13 @@ public class LancamentoController {
         Integer anoLancamento = lancamento.getAno();
         Integer mesLancamento = lancamento.getMes();
 
-        // Se o ano ou o mês do lançamento não estiverem informados, assume que não é uma data futura
         if (anoLancamento == null || mesLancamento == null) {
-            return false; // Considera que um lançamento sem ano e mês não é futuro
+            return false;
         }
 
-        // Verifica se o ano do lançamento é maior que o ano atual ou, se for o mesmo ano, se o mês é maior que o mês atual
         return anoLancamento > anoAtual || (anoLancamento == anoAtual && mesLancamento > mesAtual);
     }
 
-
-    //Endpoint de deletar lançamento
     @DeleteMapping("{id}")
     public ResponseEntity deletar(@PathVariable("id") Long id) {
         return service.obterPorId(id).map(entidade ->{
@@ -199,7 +173,6 @@ public class LancamentoController {
     }
 
     private LancamentoDTO converter(Lancamento lancamento) {
-        // cria um objeto lançamentoDTO usando o padrão do projeto builder
         return LancamentoDTO.builder()
                 .id(lancamento.getId())
                 .descricao(lancamento.getDescricao())
@@ -209,11 +182,11 @@ public class LancamentoController {
                 .status(lancamento.getStatus().name())
                 .tipo(lancamento.getTipo().name())
                 .usuario(lancamento.getUsuario().getId())
-                // Verifica se a categoria não é nula antes de acessar o ID
+                .latitude(lancamento.getLatitude())
+                .longitude(lancamento.getLongitude())
                 .categoriaId(lancamento.getCategoria() != null ? lancamento.getCategoria().getId() : null)
                 .build();
     }
-
 
     private Lancamento converter(LancamentoDTO dto) {
         Lancamento lancamento = new Lancamento();
@@ -223,19 +196,27 @@ public class LancamentoController {
         lancamento.setAno(dto.getAno());
         lancamento.setValor(dto.getValor());
 
-        // Verifica se o usuário existe
+        validarCoordenadas(dto.getLatitude(), dto.getLongitude());
+
+        lancamento.setLatitude(dto.getLatitude());
+        lancamento.setLongitude(dto.getLongitude());
+
         Usuario usuario = usuarioService
                 .obterPorId(dto.getUsuario())
                 .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado para o Id informado."));
         lancamento.setUsuario(usuario);
 
-        // Se o categoriaId for fornecido, verifica se a categoria existe
         if (dto.getCategoriaId() != null) {
             Categoria categoria = categoriaService.obterPorId(dto.getCategoriaId())
-                    .orElseThrow(() -> new RegraNegocioException("Categoria não encontrada para o Id informado."));
-            lancamento.setCategoria(categoria);
+                    .orElseGet(() -> {
+                        lancamento.setCategoria(null);
+                        return null;
+                    });
+
+            if (categoria != null) {
+                lancamento.setCategoria(categoria);
+            }
         } else {
-            // Se não houver categoriaId, define a categoria como null
             lancamento.setCategoria(null);
         }
 
@@ -249,6 +230,20 @@ public class LancamentoController {
         return lancamento;
     }
 
+    private void validarCoordenadas(BigDecimal latitude, BigDecimal longitude) {
+        if (latitude != null) {
+            if (latitude.scale() > 6 || latitude.precision() - latitude.scale() > 3) {
+                throw new RegraNegocioException("Latitude fora do formato NUMERIC(9,6).");
+            }
+        }
+        if (longitude != null) {
+            if (longitude.scale() > 6 || longitude.precision() - longitude.scale() > 3) {
+                throw new RegraNegocioException("Longitude fora do formato NUMERIC(9,6).");
+            }
+        }
+    }
+
+
     @PostMapping("{id}/importar")
     public ResponseEntity<?> importarLancamentosCSV(@RequestParam("file") MultipartFile file, @PathVariable("id") Long usuario) {
         try {
@@ -259,7 +254,6 @@ public class LancamentoController {
         }
     }
 
-    // Novo endpoint para download de lançamentos filtrados em JSON
     @GetMapping("/download")
     public ResponseEntity<?> downloadLancamentos(
             @RequestParam(value = "descricao", required = false) String descricao,
@@ -269,19 +263,16 @@ public class LancamentoController {
             @RequestParam(value = "tipo", required = false) String tipo,
             @RequestParam(value = "usuario", required = true) Long idUsuario
     ) {
-        // Verificar se o ID do usuário foi passado e é válido
         if (idUsuario == null || idUsuario <= 0) {
             return ResponseEntity.badRequest().body("ID de usuário é obrigatório e deve ser um valor positivo.");
         }
 
-        // Verificar se o mês é válido
         if (mes != null) {
             if (mes < 1 || mes > 12) {
                 return ResponseEntity.badRequest().body("Mês inválido.");
             }
         }
 
-        // Verificar se o ano é válido
         if (ano != null) {
             if (ano < 1000 || ano > 3000) {
                 return ResponseEntity.badRequest().body("Ano inválido.");
@@ -293,7 +284,6 @@ public class LancamentoController {
         lancamentoFiltro.setMes(mes);
         lancamentoFiltro.setAno(ano);
 
-        // Buscar usuário e verificar se existe
         Optional<Usuario> usuario = usuarioService.obterPorId(idUsuario);
         if (!usuario.isPresent()) {
             return ResponseEntity.badRequest().body("Usuário não encontrado para o ID informado.");
@@ -311,7 +301,6 @@ public class LancamentoController {
             lancamentoFiltro.setTipo(tipoLancamento);
         }
 
-        // Buscar lançamentos com o filtro
         List<Lancamento> lancamentos;
         try {
             lancamentos = service.buscar(lancamentoFiltro);
@@ -319,21 +308,19 @@ public class LancamentoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao buscar lançamentos: " + e.getMessage());
         }
 
-        // Verificar se não há lançamentos
         if (lancamentos.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
 
-        // Converter os lançamentos para JSON e retornar
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();//armazena arrays em bytes de memmória
-            objectMapper.writeValue(outputStream, lancamentos);//converte para json
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            objectMapper.writeValue(outputStream, lancamentos);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=lancamentos.json")//mostra que é um arquivo json para download
-                    .contentType(MediaType.APPLICATION_JSON)//indica que a resposta contém dados no formato JSON.
-                    .body(outputStream.toByteArray());//Converte o conteúdo do ByteArrayOutputStream em um array de bytes e define isso como o corpo da resposta HTTP
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=lancamentos.json")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(outputStream.toByteArray());
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao gerar o arquivo JSON: " + e.getMessage());
         }

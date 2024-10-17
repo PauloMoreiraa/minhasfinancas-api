@@ -145,64 +145,80 @@ public class LancamentoServiceImpl implements LancamentoService {
                 linhaAtual++;
                 List<String> errosLinha = new ArrayList<>();
 
-                if (values.length != 6) {
-                    mensagensErros.add("Erro na linha " + linhaAtual + ": número incorreto de colunas (exigido: 6, encontrado: " + values.length + ").");
+                if (values.length != 8) {
+                    mensagensErros.add("- Erro na linha " + linhaAtual + ": número incorreto de colunas (exigido: 8, encontrado: " + values.length + ").");
                     erros++;
                     continue;
                 }
 
                 String descricao = values[0];
                 if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
-                    errosLinha.add("Coluna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+                    errosLinha.add("\nColuna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
                 }
 
                 try {
                     int mes = Integer.parseInt(values[1]);
                     if (mes < 1 || mes > 12) {
-                        errosLinha.add("Coluna 1 (Mês): Mês inválido (valor: " + mes + ").");
+                        errosLinha.add("\nColuna 1 (Mês): Mês inválido (valor: " + mes + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("Coluna 1 (Mês): Formato inválido.");
+                    errosLinha.add("\nColuna 1 (Mês): Formato inválido.");
                 }
 
                 try {
                     int ano = Integer.parseInt(values[2]);
                     if (String.valueOf(ano).length() != 4) {
-                        errosLinha.add("Coluna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
+                        errosLinha.add("\nColuna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("Coluna 2 (Ano): Formato inválido.");
+                    errosLinha.add("\nColuna 2 (Ano): Formato inválido.");
                 }
 
                 try {
                     BigDecimal valor = new BigDecimal(values[3]);
                     if (valor.compareTo(BigDecimal.ZERO) < 0) {
-                        errosLinha.add("Coluna 3 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
+                        errosLinha.add("\nColuna 3 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("Coluna 3 (Valor): Formato inválido.");
+                    errosLinha.add("\nColuna 3 (Valor): Formato inválido.");
                 }
 
                 String tipo = values[4].toUpperCase();
                 if (!tipo.equals("RECEITA") && !tipo.equals("DESPESA")) {
-                    errosLinha.add("Coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
+                    errosLinha.add("\nColuna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
                 }
 
-                String categoriaStr = values[5];
-                Categoria categoria = null;
+                try {
+                    BigDecimal latitude = new BigDecimal(values[5]);
+                    if (latitude.scale() > 6 || latitude.precision() - latitude.scale() > 3) {
+                        errosLinha.add("\nColuna 5 (Latitude): Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + ").");
+                    }
+                } catch (NumberFormatException e) {
+                    errosLinha.add("\nColuna 5 (Latitude): Formato inválido.");
+                }
 
+                try {
+                    BigDecimal longitude = new BigDecimal(values[6]);
+                    if (longitude.scale() > 6 || longitude.precision() - longitude.scale() > 3) {
+                        errosLinha.add("\nColuna 6 (Longitude): Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + ").");
+                    }
+                } catch (NumberFormatException e) {
+                    errosLinha.add("\nColuna 6 (Longitude): Formato inválido.");
+                }
+
+                String categoriaStr = values[7];
+                Categoria categoria = null;
                 if (categoriaStr != null && !categoriaStr.trim().isEmpty()) {
                     Optional<Categoria> categoriaOptional = categoriaServiceImpl.obterPorDescricao(categoriaStr.trim());
                     if (categoriaOptional.isPresent()) {
                         categoria = categoriaOptional.get();
                     } else {
-                        System.out.println("Coluna 5 (Categoria): Categoria não encontrada (valor: " + categoriaStr + ").");
-                        categoria = null;
+                        mensagensErros.add("Categoria não encontrada para o lançamento na linha " + linhaAtual + ". O lançamento será salvo sem categoria.");
                     }
                 }
 
                 if (!errosLinha.isEmpty()) {
-                    mensagensErros.add("Erro(s) na linha " + linhaAtual + ": " + String.join(", ", errosLinha));
+                    mensagensErros.add("- Erro(s) na linha " + linhaAtual + ": " + String.join(", ", errosLinha));
                     erros++;
                     continue;
                 }
@@ -213,8 +229,10 @@ public class LancamentoServiceImpl implements LancamentoService {
                     lancamento.setMes(Integer.parseInt(values[1]));
                     lancamento.setAno(Integer.parseInt(values[2]));
                     lancamento.setValor(new BigDecimal(values[3]));
+                    lancamento.setLatitude(new BigDecimal(values[5]));
+                    lancamento.setLongitude(new BigDecimal(values[6]));
                     lancamento.setTipo(TipoLancamento.valueOf(tipo));
-                    lancamento.setCategoria(categoria);
+                    lancamento.setCategoria(categoria);  // Se a categoria for null, será salva sem categoria
                     lancamento.setStatus(StatusLancamento.PENDENTE);
 
                     Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
@@ -240,4 +258,5 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
+
 }
