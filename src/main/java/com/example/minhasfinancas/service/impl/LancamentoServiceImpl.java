@@ -144,6 +144,7 @@ public class LancamentoServiceImpl implements LancamentoService {
             while ((values = csvReader.readNext()) != null) {
                 linhaAtual++;
                 List<String> errosLinha = new ArrayList<>();
+                boolean erroLeve = false;
 
                 if (values.length != 8) {
                     mensagensErros.add("- Erro na linha " + linhaAtual + ": número incorreto de colunas (exigido: 8, encontrado: " + values.length + ").");
@@ -188,22 +189,32 @@ public class LancamentoServiceImpl implements LancamentoService {
                     errosLinha.add("\nColuna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
                 }
 
+                BigDecimal latitude = null;
                 try {
-                    BigDecimal latitude = new BigDecimal(values[5]);
+                    latitude = new BigDecimal(values[5]);
                     if (latitude.scale() > 6 || latitude.precision() - latitude.scale() > 3) {
-                        errosLinha.add("\nColuna 5 (Latitude): Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + ").");
+                        mensagensErros.add("\nColuna 5 (Latitude): Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + "). Definida como nula.");
+                        latitude = null;
+                        erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("\nColuna 5 (Latitude): Formato inválido.");
+                    mensagensErros.add("\nColuna 5 (Latitude): Formato inválido. Definida como nula.");
+                    latitude = null;
+                    erroLeve = true;
                 }
 
+                BigDecimal longitude = null;
                 try {
-                    BigDecimal longitude = new BigDecimal(values[6]);
+                    longitude = new BigDecimal(values[6]);
                     if (longitude.scale() > 6 || longitude.precision() - longitude.scale() > 3) {
-                        errosLinha.add("\nColuna 6 (Longitude): Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + ").");
+                        mensagensErros.add("\nColuna 6 (Longitude): Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + "). Definida como nula.");
+                        longitude = null;
+                        erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("\nColuna 6 (Longitude): Formato inválido.");
+                    mensagensErros.add("\nColuna 6 (Longitude): Formato inválido. Definida como nula.");
+                    longitude = null;
+                    erroLeve = true;
                 }
 
                 String categoriaStr = values[7];
@@ -213,7 +224,8 @@ public class LancamentoServiceImpl implements LancamentoService {
                     if (categoriaOptional.isPresent()) {
                         categoria = categoriaOptional.get();
                     } else {
-                        mensagensErros.add("Categoria não encontrada para o lançamento na linha " + linhaAtual + ". O lançamento será salvo sem categoria.");
+                        mensagensErros.add("\nColuna 7 (Categoria): Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
+                        erroLeve = true;
                     }
                 }
 
@@ -229,10 +241,10 @@ public class LancamentoServiceImpl implements LancamentoService {
                     lancamento.setMes(Integer.parseInt(values[1]));
                     lancamento.setAno(Integer.parseInt(values[2]));
                     lancamento.setValor(new BigDecimal(values[3]));
-                    lancamento.setLatitude(new BigDecimal(values[5]));
-                    lancamento.setLongitude(new BigDecimal(values[6]));
+                    lancamento.setLatitude(latitude);
+                    lancamento.setLongitude(longitude);
                     lancamento.setTipo(TipoLancamento.valueOf(tipo));
-                    lancamento.setCategoria(categoria);  // Se a categoria for null, será salva sem categoria
+                    lancamento.setCategoria(categoria);
                     lancamento.setStatus(StatusLancamento.PENDENTE);
 
                     Usuario usuario = usuarioServiceImpl.obterPorId(usuarioId)
@@ -245,6 +257,10 @@ public class LancamentoServiceImpl implements LancamentoService {
                     mensagensErros.add("Erro ao processar linha " + linhaAtual + ": " + Arrays.toString(values) + " - " + e.getMessage());
                     erros++;
                 }
+
+                if (erroLeve) {
+                    mensagensErros.add("Lançamento na linha " + linhaAtual + " foi salvo, mas com valores nulos ou inválidos em latitude, longitude ou categoria.");
+                }
             }
         }
 
@@ -252,11 +268,10 @@ public class LancamentoServiceImpl implements LancamentoService {
             repository.saveAll(lancamentos);
         }
 
-        if (erros == 0) {
+        if (erros == 0 && mensagensErros.isEmpty()) {
             mensagensErros.add("Importação realizada com sucesso! Todos os lançamentos foram importados sem erros.");
         }
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
     }
-
 }
