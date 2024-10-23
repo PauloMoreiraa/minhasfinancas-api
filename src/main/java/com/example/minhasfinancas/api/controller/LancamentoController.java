@@ -232,12 +232,12 @@ public class LancamentoController {
 
     private void validarCoordenadas(BigDecimal latitude, BigDecimal longitude) {
         if (latitude != null) {
-            if (latitude.scale() > 6 || latitude.precision() - latitude.scale() > 3) {
+            if (latitude.scale() > 15 || latitude.precision() - latitude.scale() > 3) {
                 throw new RegraNegocioException("Latitude fora do formato NUMERIC(9,6).");
             }
         }
         if (longitude != null) {
-            if (longitude.scale() > 6 || longitude.precision() - longitude.scale() > 3) {
+            if (longitude.scale() > 15 || longitude.precision() - longitude.scale() > 3) {
                 throw new RegraNegocioException("Longitude fora do formato NUMERIC(9,6).");
             }
         }
