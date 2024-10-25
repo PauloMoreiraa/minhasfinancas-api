@@ -9,6 +9,8 @@ import com.example.minhasfinancas.model.enums.StatusLancamento;
 import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.service.LancamentoService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import org.springframework.data.domain.Example;
@@ -268,10 +270,16 @@ public class LancamentoServiceImpl implements LancamentoService {
             repository.saveAll(lancamentos);
         }
 
-        if (erros == 0 && mensagensErros.isEmpty()) {
-            mensagensErros.add("Importação realizada com sucesso! Todos os lançamentos foram importados sem erros.");
+        List<String> lancamentosJson = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (Lancamento lancamento : lancamentos) {
+            try {
+                lancamentosJson.add(objectMapper.writeValueAsString(lancamento));
+            } catch (JsonProcessingException e) {
+                mensagensErros.add("Erro ao converter lançamento para JSON: " + e.getMessage());
+            }
         }
 
-        return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros);
+        return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros, lancamentosJson);
     }
 }

@@ -175,6 +175,8 @@ Abaixo está a descrição dos principais endpoints da API:
         "valor": 1500.00,
         "tipo": "RECEITA",
         "status": "EFETIVADO",
+        "latitude": -23.550520,
+        "longitude": -46.633308,
         "categoria": {
           "id": 1,
           "nome": "Vendas"
@@ -200,6 +202,8 @@ Abaixo está a descrição dos principais endpoints da API:
       "valor": 1500.00,
       "tipo": "RECEITA",
       "status": "EFETIVADO",
+      "latitude": -23.550520,
+      "longitude": -46.633308,
       "categoria": {
         "id": 1,
         "nome": "Vendas"
@@ -222,6 +226,8 @@ Abaixo está a descrição dos principais endpoints da API:
       "valor": 1500.00,
       "tipo": "RECEITA",
       "status": "PENDENTE",
+      "latitude": -23.550520,
+      "longitude": -46.633308,
       "categoria": {
         "id": 1,
         "nome": "Vendas"
@@ -246,6 +252,8 @@ Abaixo está a descrição dos principais endpoints da API:
       "valor": 2000.00,
       "tipo": "RECEITA",
       "status": "PENDENTE",
+      "latitude": -23.550520,
+      "longitude": -46.633308,
       "categoria": {
         "id": 1,
         "nome": "Vendas"
@@ -310,6 +318,8 @@ Abaixo está a descrição dos principais endpoints da API:
         "valor": 1500.00,
         "tipo": "RECEITA",
         "status": "EFETIVADO",
+        "latitude": -23.550520,
+        "longitude": -46.633308,
         "categoria": {
           "id": 1,
           "nome": "Vendas"
