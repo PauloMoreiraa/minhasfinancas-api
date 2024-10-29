@@ -156,51 +156,51 @@ public class LancamentoServiceImpl implements LancamentoService {
 
                 String descricao = values[0];
                 if (descricao == null || descricao.isEmpty() || descricao.length() > 100) {
-                    errosLinha.add("\nColuna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+                    errosLinha.add("Coluna de descrição: Descrição inválida (vazia ou com mais de 100 caracteres).");
                 }
 
                 try {
                     int mes = Integer.parseInt(values[1]);
                     if (mes < 1 || mes > 12) {
-                        errosLinha.add("\nColuna 1 (Mês): Mês inválido (valor: " + mes + ").");
+                        errosLinha.add("Coluna de mês: Mês inválido (valor: " + mes + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("\nColuna 1 (Mês): Formato inválido.");
+                    errosLinha.add("Coluna de mês: Formato inválido.");
                 }
 
                 try {
                     int ano = Integer.parseInt(values[2]);
                     if (String.valueOf(ano).length() != 4) {
-                        errosLinha.add("\nColuna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
+                        errosLinha.add("Coluna de ano: Ano inválido (deve ter 4 dígitos, valor: " + ano + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("\nColuna 2 (Ano): Formato inválido.");
+                    errosLinha.add("Coluna de ano: Formato inválido.");
                 }
 
                 try {
                     BigDecimal valor = new BigDecimal(values[3]);
                     if (valor.compareTo(BigDecimal.ZERO) < 0) {
-                        errosLinha.add("\nColuna 3 (Valor): Valor não pode ser negativo (valor: " + valor + ").");
+                        errosLinha.add("Coluna de valor: Valor não pode ser negativo (valor: " + valor + ").");
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("\nColuna 3 (Valor): Formato inválido.");
+                    errosLinha.add("Coluna de valor: Formato inválido.");
                 }
 
                 String tipo = values[4].toUpperCase();
                 if (!tipo.equals("RECEITA") && !tipo.equals("DESPESA")) {
-                    errosLinha.add("\nColuna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
+                    errosLinha.add("Coluna de tipo: Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: " + tipo + ").");
                 }
 
                 BigDecimal latitude = null;
                 try {
                     latitude = new BigDecimal(values[5]);
-                    if (latitude.scale() > 6 || latitude.precision() - latitude.scale() > 3) {
-                        mensagensErros.add("\nColuna 5 (Latitude): Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + "). Definida como nula.");
+                    if (latitude.scale() > 15 || latitude.precision() - latitude.scale() > 3) {
+                        errosLinha.add("Coluna de latitude: Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + "). Definida como nula.");
                         latitude = null;
                         erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    mensagensErros.add("\nColuna 5 (Latitude): Formato inválido. Definida como nula.");
+                    errosLinha.add("Coluna de latitude: Formato inválido. Definida como nula.");
                     latitude = null;
                     erroLeve = true;
                 }
@@ -208,13 +208,13 @@ public class LancamentoServiceImpl implements LancamentoService {
                 BigDecimal longitude = null;
                 try {
                     longitude = new BigDecimal(values[6]);
-                    if (longitude.scale() > 6 || longitude.precision() - longitude.scale() > 3) {
-                        mensagensErros.add("\nColuna 6 (Longitude): Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + "). Definida como nula.");
+                    if (longitude.scale() > 15 || longitude.precision() - longitude.scale() > 3) {
+                        errosLinha.add("Coluna de longitude: Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + "). Definida como nula.");
                         longitude = null;
                         erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    mensagensErros.add("\nColuna 6 (Longitude): Formato inválido. Definida como nula.");
+                    errosLinha.add("Coluna de longitude: Formato inválido. Definida como nula.");
                     longitude = null;
                     erroLeve = true;
                 }
@@ -226,13 +226,13 @@ public class LancamentoServiceImpl implements LancamentoService {
                     if (categoriaOptional.isPresent()) {
                         categoria = categoriaOptional.get();
                     } else {
-                        mensagensErros.add("\nColuna 7 (Categoria): Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
+                        errosLinha.add("Coluna de categoria: Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
                         erroLeve = true;
                     }
                 }
 
                 if (!errosLinha.isEmpty()) {
-                    mensagensErros.add("- Erro(s) na linha " + linhaAtual + ": " + String.join(", ", errosLinha));
+                    mensagensErros.add("- Erro(s) na linha " + linhaAtual + ":\n " + String.join("\n ", errosLinha));
                     erros++;
                     continue;
                 }
@@ -282,4 +282,5 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros, lancamentosJson);
     }
+
 }
