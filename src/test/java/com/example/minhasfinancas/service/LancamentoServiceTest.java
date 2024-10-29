@@ -3,9 +3,11 @@ package com.example.minhasfinancas.service;
 import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
+import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.model.repository.LancamentoRepositoryTest;
 import com.example.minhasfinancas.service.impl.CategoriaServiceImpl;
@@ -38,7 +40,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -365,30 +368,32 @@ public class LancamentoServiceTest {
 
 
     @Test
-    public void deveLancarErroAoImportarLancamentosComNumeroIncorretoDeColunas() throws IOException, CsvValidationException {
-        // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo\n" + // Cabeçalho
-                "Salario,5,2024,3000,RECEITA\n" + // Linha 1 (válida)
-                "Despesa,6,2024,-1000,DESPESA\n"; // Linha 2 (inválida - 5 colunas)
+    public void deveLancarErroAoTentarImportarCSVComNumeroDeColunasInvalido() throws IOException, CsvValidationException {
+        // Cenário: um CSV com um cabeçalho e uma linha de dados que possui menos de seis colunas.
+        String conteudoCSV = "descricao,mês,ano,valor,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000\n"; // Linha de dados com 4 colunas (inválida)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
                 conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
         );
 
-        // Execução
+        // Execução e Verificação
         ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
 
-        // Verificação
+        // Verificação: deve haver um erro
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
-        Assertions.assertThat(resultado.getMensagensErros()).contains("Erro na linha 2: número incorreto de colunas (exigido: 6, encontrado: 5).");
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro na linha 1: número incorreto de colunas (exigido: 8, encontrado: 4).");
     }
+
+
 
     @Test
     public void deveLancarErroAoImportarLancamentosComDescricaoInvalida() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
-                ",5,2024,3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - descrição vazia)
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                ",5,2024,3000,RECEITA,23.345,23.234,\n"; // Linha 1 (inválida - descrição vazia)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -401,14 +406,15 @@ public class LancamentoServiceTest {
         // Verificação
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
         Assertions.assertThat(resultado.getMensagensErros())
-                .contains("Erro na linha 1, coluna 0 (Descrição): Descrição inválida (vazia ou com mais de 100 caracteres).");
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de descrição: Descrição inválida (vazia ou com mais de 100 caracteres).");
     }
 
     @Test
     public void deveLancarErroAoImportarLancamentosComMesInvalido() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
-                "Salario,13,2024,3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - mês fora do intervalo)
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,13,2024,3000,RECEITA,-24.999,-43.897,\n"; // Linha 1 (inválida - mês fora do intervalo)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -421,14 +427,15 @@ public class LancamentoServiceTest {
         // Verificação
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
         Assertions.assertThat(resultado.getMensagensErros())
-                .contains("Erro na linha 1, coluna 1 (Mês): Mês inválido (valor: 13).");
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de mês: Mês inválido (valor: 13).");
     }
 
     @Test
     public void deveLancarErroAoImportarLancamentosComValorNegativo() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
-                "Salario,5,2024,-3000,RECEITA,Alimentação\n"; // Linha 1 (inválida - valor negativo)
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,5,2024,-3000,RECEITA,-24.987,-23.543,\n"; // Linha 1 (inválida - valor negativo)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -441,14 +448,15 @@ public class LancamentoServiceTest {
         // Verificação
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
         Assertions.assertThat(resultado.getMensagensErros())
-                .contains("Erro na linha 1, coluna 3 (Valor): Valor não pode ser negativo (valor: -3000).");
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de valor: Valor não pode ser negativo (valor: -3000).");
     }
 
     @Test
     public void deveLancarErroAoImportarLancamentosComAnoInvalido() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" + // Cabeçalho
-                "Salario,5,100,3000,RECEITA,\n"; // Linha 1 (inválida - ano fora do intervalo)
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,5,100,3000,RECEITA,13.000,-12.657,\n"; // Linha 1 (inválida - ano fora do intervalo)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -461,14 +469,15 @@ public class LancamentoServiceTest {
         // Verificação
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
         Assertions.assertThat(resultado.getMensagensErros())
-                .contains("Erro na linha 1, coluna 2 (Ano): Ano inválido (deve ter 4 dígitos, valor: 100).");
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de ano: Ano inválido (deve ter 4 dígitos, valor: 100).");
     }
 
     @Test
     public void deveLancarErroAoImportarLancamentosComTipoInvalido() throws IOException, CsvValidationException {
         // Cenário
-        String conteudoCSV = "descricao,mês,ano,valor,tipo,categoria\n" +
-                "Salario,5,2024,3000,RTA,\n"; // Linha 1 (inválida - ano fora do intervalo)
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RTA,-23.234,23.987,\n"; // Linha 1 (inválida - ano fora do intervalo)
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -481,6 +490,275 @@ public class LancamentoServiceTest {
         // Verificação
         Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
         Assertions.assertThat(resultado.getMensagensErros())
-                .contains("Erro na linha 1, coluna 4 (Tipo): Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: RTA).");
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de tipo: Tipo de lançamento inválido (deve ser 'RECEITA' ou 'DESPESA', valor: RTA).");
     }
+
+    @Test
+    public void deveRetornarSaldoPositivoQuandoHouverReceitas() {
+        // Cenário
+        Long usuarioId = 1L;
+        BigDecimal receitas = BigDecimal.valueOf(1000);
+        BigDecimal despesas = BigDecimal.valueOf(500);
+
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO)).thenReturn(receitas);
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO)).thenReturn(despesas);
+
+        // Execução
+        BigDecimal saldo = service.obterSaldoPorUsuario(usuarioId);
+
+        // Verificação
+        Assertions.assertThat(saldo).isEqualTo(BigDecimal.valueOf(500));
+    }
+
+    @Test
+    public void deveRetornarSaldoNegativoQuandoHouverMaisDespesasQueReceitas() {
+        // Cenário
+        Long usuarioId = 1L;
+        BigDecimal receitas = BigDecimal.valueOf(300);
+        BigDecimal despesas = BigDecimal.valueOf(500);
+
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO)).thenReturn(receitas);
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO)).thenReturn(despesas);
+
+        // Execução
+        BigDecimal saldo = service.obterSaldoPorUsuario(usuarioId);
+
+        // Verificação
+        Assertions.assertThat(saldo).isEqualTo(BigDecimal.valueOf(-200)); // 300 - 500
+    }
+
+    @Test
+    public void deveRetornarSaldoZeroQuandoNaoHouverReceitasNemDespesas() {
+        // Cenário
+        Long usuarioId = 1L;
+
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO)).thenReturn(null);
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO)).thenReturn(null);
+
+        // Execução
+        BigDecimal saldo = service.obterSaldoPorUsuario(usuarioId);
+
+        // Verificação
+        Assertions.assertThat(saldo).isEqualTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    public void deveRetornarSaldoQuandoReceitasEdespesasSaoNulos() {
+        // Cenário
+        Long usuarioId = 1L;
+
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO)).thenReturn(null);
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO)).thenReturn(BigDecimal.valueOf(300));
+
+        // Execução
+        BigDecimal saldo = service.obterSaldoPorUsuario(usuarioId);
+
+        // Verificação
+        Assertions.assertThat(saldo).isEqualTo(BigDecimal.valueOf(-300));
+    }
+
+    @Test
+    public void deveRetornarSaldoQuandoDespesasSaoNulas() {
+        // Cenário
+        Long usuarioId = 1L;
+        BigDecimal receitas = BigDecimal.valueOf(500);
+
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO)).thenReturn(receitas);
+        when(repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(usuarioId, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO)).thenReturn(null);
+
+        // Execução
+        BigDecimal saldo = service.obterSaldoPorUsuario(usuarioId);
+
+        // Verificação
+        Assertions.assertThat(saldo).isEqualTo(BigDecimal.valueOf(500));
+    }
+
+    @Test
+    public void colunaMesForaDoFormatoValido() throws IOException, CsvValidationException {
+        String csvContent = "descricao,mes,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Teste,13,2023,1000,RECEITA,12.345,45.678,"; // Mês inválido (13)
+        MultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", csvContent.getBytes());
+
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, 1L);
+
+        Assertions.assertThat(resultado.getErros()).isEqualTo(1);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("- Erro(s) na linha 1:\n Coluna de mês: Mês inválido (valor: 13).");
+    }
+
+    @Test
+    public void colunaAnoForaDoFormatoValido() throws IOException, CsvValidationException {
+        String csvContent = "descricao,mes,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Teste,12,99,1000,RECEITA,12.345,45.678,"; // Ano inválido (99)
+        MultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", csvContent.getBytes());
+
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, 1L);
+
+        Assertions.assertThat(resultado.getErros()).isEqualTo(1);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("- Erro(s) na linha 1:\n Coluna de ano: Ano inválido (deve ter 4 dígitos, valor: 99).");
+    }
+
+    @Test
+    public void colunaValorForaDoFormatoValido() throws IOException, CsvValidationException {
+        String csvContent = "descricao,mes,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Teste,12,2023,-1000,RECEITA,12.345,45.678,"; // Valor inválido (-1000)
+        MultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", csvContent.getBytes());
+
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, 1L);
+
+        Assertions.assertThat(resultado.getErros()).isEqualTo(1);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("- Erro(s) na linha 1:\n Coluna de valor: Valor não pode ser negativo (valor: -1000).");
+    }
+
+    @Test
+    public void testeLatitudeForaDoFormatoValido() throws IOException, CsvValidationException {
+        String csvContent = "descricao,mes,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Teste,12,2023,1000,RECEITA,123456789012345.678,45.678,"; // Latitude muito grande
+        MultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", csvContent.getBytes());
+
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, 1L);
+
+        Assertions.assertThat(resultado.getErros()).isEqualTo(1);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("- Erro(s) na linha 1:\n Coluna de latitude: Latitude fora do formato numérico ou valor muito grande (valor: 123456789012345.678). Definida como nula.");
+    }
+
+    @Test
+    public void testeLongitudeForaDoFormatoValido() throws IOException, CsvValidationException {
+        String csvContent = "descricao,mes,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Teste,12,2023,1000,RECEITA,12.345,123456789012345.678,"; // Longitude muito grande
+        MultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", csvContent.getBytes());
+
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(file, 1L);
+
+        Assertions.assertThat(resultado.getErros()).isEqualTo(1);
+        Assertions.assertThat(resultado.getMensagensErros()).contains("- Erro(s) na linha 1:\n Coluna de longitude: Longitude fora do formato numérico ou valor muito grande (valor: 123456789012345.678). Definida como nula.");
+    }
+
+    @Test
+    public void testeCategoriaNaoEncontrada() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,5,2024,3000,RECEITA,-24.987,-23.543,categoriaInexistente\n"; // Linha 1 (inválida - valor negativo)
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de categoria: Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
+    }
+
+    @Test
+    public void longitudeForaDoFormatoValido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RECEITA,0, abc,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de longitude: Formato inválido. Definida como nula.");
+    }
+
+    @Test
+    public void latitudeForaDoFormatoValido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RECEITA,abc,98.888,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de latitude: Formato inválido. Definida como nula.");
+    }
+
+    @Test
+    public void formatoNumericoMuitoGrandeDeLatitude() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RECEITA,56.6565656565665565656565656,98.888,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de latitude: Latitude fora do formato numérico ou valor muito grande (valor: 56.6565656565665565656565656). Definida como nula.");
+    }
+
+    @Test
+    public void formatoNumericoMuitoGrandeDeLongitude() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RECEITA,12.989,98.88989898989898989898988,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de longitude: Longitude fora do formato numérico ou valor muito grande (valor: 98.88989898989898989898988). Definida como nula.");
+    }
+
+    @Test
+    public void categoriaNaoEncontradaLancamentSalvoSemCategoria() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RECEITA,12.989,98.234,cat\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de categoria: Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
+    }
+
 }
+
