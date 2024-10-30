@@ -3,7 +3,6 @@ package com.example.minhasfinancas.service;
 import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.exception.RegraNegocioException;
-import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
@@ -371,7 +370,7 @@ public class LancamentoServiceTest {
     public void deveLancarErroAoTentarImportarCSVComNumeroDeColunasInvalido() throws IOException, CsvValidationException {
         // Cenário: um CSV com um cabeçalho e uma linha de dados que possui menos de seis colunas.
         String conteudoCSV = "descricao,mês,ano,valor,latitude,longitude,categoria\n" +
-                "Salario,5,2024,3000\n"; // Linha de dados com 4 colunas (inválida)
+                "Salario,5,2024,3000\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -393,7 +392,7 @@ public class LancamentoServiceTest {
     public void deveLancarErroAoImportarLancamentosComDescricaoInvalida() throws IOException, CsvValidationException {
         // Cenário
         String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
-                ",5,2024,3000,RECEITA,23.345,23.234,\n"; // Linha 1 (inválida - descrição vazia)
+                ",5,2024,3000,RECEITA,23.345,23.234,\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -414,7 +413,7 @@ public class LancamentoServiceTest {
     public void deveLancarErroAoImportarLancamentosComMesInvalido() throws IOException, CsvValidationException {
         // Cenário
         String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
-                "Salario,13,2024,3000,RECEITA,-24.999,-43.897,\n"; // Linha 1 (inválida - mês fora do intervalo)
+                "Salario,13,2024,3000,RECEITA,-24.999,-43.897,\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
@@ -432,14 +431,35 @@ public class LancamentoServiceTest {
     }
 
     @Test
-    public void deveLancarErroAoImportarLancamentosComValorNegativo() throws IOException, CsvValidationException {
+    public void deveLancarErroAoImportarLancamentosComMesInvalidoComLetras() throws IOException, CsvValidationException {
         // Cenário
         String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
-                "Salario,5,2024,-3000,RECEITA,-24.987,-23.543,\n"; // Linha 1 (inválida - valor negativo)
+                "Salario,ab,2024,3000,RECEITA,-24.999,-43.897,\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
                 conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de mês: Formato inválido.");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComValorNegativo() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,5,2024,-3000,RECEITA,-24.987,-23.543,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
         );
 
         // Execução
@@ -453,14 +473,35 @@ public class LancamentoServiceTest {
     }
 
     @Test
-    public void deveLancarErroAoImportarLancamentosComAnoInvalido() throws IOException, CsvValidationException {
+    public void deveLancarErroAoImportarLancamentosComValorInvalido() throws IOException, CsvValidationException {
         // Cenário
         String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
-                "Salario,5,100,3000,RECEITA,13.000,-12.657,\n"; // Linha 1 (inválida - ano fora do intervalo)
+                "Salario,5,2024,abc,RECEITA,-24.987,-23.543,\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
-                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de valor: Formato inválido.");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComAnoInvalido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" + // Cabeçalho
+                "Salario,5,100,3000,RECEITA,13.000,-12.657,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
         );
 
         // Execução
@@ -474,14 +515,35 @@ public class LancamentoServiceTest {
     }
 
     @Test
-    public void deveLancarErroAoImportarLancamentosComTipoInvalido() throws IOException, CsvValidationException {
+    public void deveLancarErroAoImportarLancamentosComAnoInvalidoComLetras() throws IOException, CsvValidationException {
         // Cenário
         String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
-                "Salario,5,2024,3000,RTA,-23.234,23.987,\n"; // Linha 1 (inválida - ano fora do intervalo)
+                "Salario,5,abcd,3000,RECEITA,13.000,-12.657,\n";
 
         MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
                 "lancamentos.csv", "text/csv",
-                conteudoCSV.getBytes(StandardCharsets.UTF_8) // Converte para bytes corretamente
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
+        );
+
+        // Execução
+        ImportacaoResultadoDTO resultado = service.importarLancamentosCSV(arquivoCSV, 1L);
+
+        // Verificação
+        Assertions.assertThat(resultado.getErros()).isGreaterThan(0);
+        Assertions.assertThat(resultado.getMensagensErros())
+                .contains("- Erro(s) na linha 1:\n" +
+                        " Coluna de ano: Formato inválido.");
+    }
+
+    @Test
+    public void deveLancarErroAoImportarLancamentosComTipoInvalido() throws IOException, CsvValidationException {
+        // Cenário
+        String conteudoCSV = "descricao,mês,ano,valor,tipo,latitude,longitude,categoria\n" +
+                "Salario,5,2024,3000,RTA,-23.234,23.987,\n";
+
+        MultipartFile arquivoCSV = new MockMultipartFile("lancamentos.csv",
+                "lancamentos.csv", "text/csv",
+                conteudoCSV.getBytes(StandardCharsets.UTF_8)
         );
 
         // Execução

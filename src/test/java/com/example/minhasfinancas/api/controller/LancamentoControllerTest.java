@@ -2,6 +2,7 @@ package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
+import com.example.minhasfinancas.api.dto.LancamentoDTO;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @RunWith(SpringRunner.class)
@@ -154,6 +156,117 @@ public class LancamentoControllerTest {
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    @Test
+    public void deveRetornarErroAoBuscarLancamentosComUsuarioNaoEncontrado() {
+        // Cenário
+        Mockito.when(usuarioServiceImpl.obterPorId(1L)).thenReturn(Optional.empty()); // Simula usuário inexistente
 
+        // Ação
+        ResponseEntity<?> response = lancamentoController.buscar("Lançamento Teste", 5, 2024, null, "RECEITA", 1L);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody())
+                .isEqualTo("Não foi possível realizar a consulta. Usuário não encontrado para o Id informado.");
+    }
+
+    @Test
+    public void deveRetornarLancamentosComSucesso() {
+        // Cenário: Usuário válido e lançamentos encontrados
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        Lancamento lancamento = new Lancamento();
+        lancamento.setDescricao("Lançamento Teste");
+
+        // Simula a busca do usuário por ID
+        Mockito.when(usuarioServiceImpl.obterPorId(1L)).thenReturn(Optional.of(usuario));
+
+        // Simula a busca de lançamentos que retorna um item
+        Mockito.when(service.buscar(Mockito.any(Lancamento.class)))
+                .thenReturn(Collections.singletonList(lancamento));
+
+        // Ação: Realiza a busca dos lançamentos
+        ResponseEntity<?> response = lancamentoController.buscar("Lançamento Teste", 5, 2024, null, "RECEITA", 1L);
+
+        // Verificação: O status da resposta deve ser OK (200)
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Verifica se a lista de lançamentos contém o lançamento esperado
+        Assertions.assertThat(response.getBody()).isInstanceOf(List.class);
+        List<Lancamento> lancamentos = (List<Lancamento>) response.getBody();
+        Assertions.assertThat(lancamentos).contains(lancamento);
+    }
+
+    @Test
+    public void deveRetornarErroQuandoCategoriaNaoExistir() {
+        // Cenário: Categoria não encontrada
+        LancamentoDTO dto = new LancamentoDTO();
+        dto.setCategoriaId(2L); // Id de uma categoria inexistente
+
+        Mockito.when(service.obterPorId(2L)).thenReturn(Optional.empty());
+
+        // Execução
+        ResponseEntity<?> response = lancamentoController.salvar(dto);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Categoria não encontrada. O lançamento será salvo sem categoria.");
+    }
+
+    @Test
+    public void naoDeveAtualizarLancamentoNaoExistente() {
+        // Cenário
+        LancamentoDTO lancamentoDTO = new LancamentoDTO();
+
+        // Mock para não encontrar o lançamento
+        Mockito.when(service.obterPorId(1L)).thenReturn(Optional.empty());
+
+        // Ação
+        ResponseEntity<?> response = lancamentoController.atualizar(1L, lancamentoDTO);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Lançamento não encontrado na base de dados.");
+    }
+
+    @Test
+    public void naoDeveAtualizarLancamentoCancelado() {
+        // Cenário
+        Lancamento lancamentoExistente = new Lancamento();
+        lancamentoExistente.setId(1L);
+        lancamentoExistente.setStatus(StatusLancamento.CANCELADO); // Status inicial
+
+        LancamentoDTO lancamentoDTO = new LancamentoDTO();
+
+        // Mock para retornar o lançamento existente
+        Mockito.when(service.obterPorId(1L)).thenReturn(Optional.of(lancamentoExistente));
+
+        // Ação
+        ResponseEntity<?> response = lancamentoController.atualizar(1L, lancamentoDTO);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Não é possível atualizar um lançamento que já foi efetivado ou cancelado.");
+    }
+
+    @Test
+    public void naoDeveAtualizarLancamentoEfetivado() {
+        // Cenário
+        Lancamento lancamentoExistente = new Lancamento();
+        lancamentoExistente.setId(1L);
+        lancamentoExistente.setStatus(StatusLancamento.EFETIVADO); // Status inicial
+
+        LancamentoDTO lancamentoDTO = new LancamentoDTO();
+
+        // Mock para retornar o lançamento existente
+        Mockito.when(service.obterPorId(1L)).thenReturn(Optional.of(lancamentoExistente));
+
+        // Ação
+        ResponseEntity<?> response = lancamentoController.atualizar(1L, lancamentoDTO);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Não é possível atualizar um lançamento que já foi efetivado ou cancelado.");
+    }
 }
 

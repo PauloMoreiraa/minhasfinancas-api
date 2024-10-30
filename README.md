@@ -8,8 +8,8 @@ Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada p
 
 ## 🧪 Cobertura de Testes
 
-- 53 testes funcionais 
-- 52,75% de cobertura de testes no sistema
+- 78 testes funcionais 
+- 58% de cobertura de testes no sistema
 
 ## 🚀 Tecnologias Utilizadas
 
@@ -159,7 +159,7 @@ Abaixo está a descrição dos principais endpoints da API:
 - **Parâmetros de Consulta:**
   - `descricao` (opcional): Descrição do lançamento.
   - `mes` (opcional): Mês do lançamento.
-  - `ano` (opcional): Ano do lançamento.
+  - `ano` (obrigatório): Ano do lançamento.
   - `categoriaId` (opcional): ID da categoria do lançamento.
   - `tipo` (opcional): Tipo do lançamento ("RECEITA" ou "DESPESA").
   - `usuario` (obrigatório): ID do usuário.
@@ -304,7 +304,7 @@ Abaixo está a descrição dos principais endpoints da API:
 - **Parâmetros de Consulta:**
   - `descricao` (opcional): Descrição do lançamento.
   - `mes` (opcional): Mês do lançamento.
-  - `ano` (opcional): Ano do lançamento.
+  - `ano` (obrigatório): Ano do lançamento.
   - `usuario` (obrigatório): ID do usuário.
 - **Resposta:**
   - **200 OK**
