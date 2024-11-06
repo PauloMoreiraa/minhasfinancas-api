@@ -172,7 +172,7 @@ public class LancamentoController {
                 new ResponseEntity("Lançamento não encontrado na base de Dados.", HttpStatus.BAD_REQUEST));
     }
 
-    private LancamentoDTO converter(Lancamento lancamento) {
+    LancamentoDTO converter(Lancamento lancamento) {
         return LancamentoDTO.builder()
                 .id(lancamento.getId())
                 .descricao(lancamento.getDescricao())
@@ -188,7 +188,7 @@ public class LancamentoController {
                 .build();
     }
 
-    private Lancamento converter(LancamentoDTO dto) {
+    Lancamento converter(LancamentoDTO dto) {
         Lancamento lancamento = new Lancamento();
         lancamento.setId(dto.getId());
         lancamento.setDescricao(dto.getDescricao());
@@ -230,7 +230,7 @@ public class LancamentoController {
         return lancamento;
     }
 
-    private void validarCoordenadas(BigDecimal latitude, BigDecimal longitude) {
+    void validarCoordenadas(BigDecimal latitude, BigDecimal longitude) {
         if (latitude != null) {
             if (latitude.scale() > 15 || latitude.precision() - latitude.scale() > 3) {
                 throw new RegraNegocioException("Latitude fora do formato NUMERIC(9,6).");

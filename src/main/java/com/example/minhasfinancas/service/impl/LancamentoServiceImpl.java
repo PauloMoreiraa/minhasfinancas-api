@@ -120,7 +120,6 @@ public class LancamentoServiceImpl implements LancamentoService {
         return receitas.subtract(despesas);
     }
 
-
     @Override
     @Transactional
     public ImportacaoResultadoDTO importarLancamentosCSV(MultipartFile file, Long usuarioId) throws IOException, CsvValidationException {
@@ -195,28 +194,20 @@ public class LancamentoServiceImpl implements LancamentoService {
                 try {
                     latitude = new BigDecimal(values[5]);
                     if (latitude.scale() > 15 || latitude.precision() - latitude.scale() > 3) {
-                        errosLinha.add("Coluna de latitude: Latitude fora do formato numérico ou valor muito grande (valor: " + latitude + "). Definida como nula.");
                         latitude = null;
-                        erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("Coluna de latitude: Formato inválido. Definida como nula.");
                     latitude = null;
-                    erroLeve = true;
                 }
 
                 BigDecimal longitude = null;
                 try {
                     longitude = new BigDecimal(values[6]);
                     if (longitude.scale() > 15 || longitude.precision() - longitude.scale() > 3) {
-                        errosLinha.add("Coluna de longitude: Longitude fora do formato numérico ou valor muito grande (valor: " + longitude + "). Definida como nula.");
                         longitude = null;
-                        erroLeve = true;
                     }
                 } catch (NumberFormatException e) {
-                    errosLinha.add("Coluna de longitude: Formato inválido. Definida como nula.");
                     longitude = null;
-                    erroLeve = true;
                 }
 
                 String categoriaStr = values[7];
@@ -225,9 +216,6 @@ public class LancamentoServiceImpl implements LancamentoService {
                     Optional<Categoria> categoriaOptional = categoriaServiceImpl.obterPorDescricao(categoriaStr.trim());
                     if (categoriaOptional.isPresent()) {
                         categoria = categoriaOptional.get();
-                    } else {
-                        errosLinha.add("Coluna de categoria: Categoria não encontrada para o lançamento. O lançamento será salvo sem categoria.");
-                        erroLeve = true;
                     }
                 }
 
@@ -259,10 +247,6 @@ public class LancamentoServiceImpl implements LancamentoService {
                     mensagensErros.add("Erro ao processar linha " + linhaAtual + ": " + Arrays.toString(values) + " - " + e.getMessage());
                     erros++;
                 }
-
-                if (erroLeve) {
-                    mensagensErros.add("Lançamento na linha " + linhaAtual + " foi salvo, mas com valores nulos ou inválidos em latitude, longitude ou categoria.");
-                }
             }
         }
 
@@ -282,5 +266,6 @@ public class LancamentoServiceImpl implements LancamentoService {
 
         return new ImportacaoResultadoDTO(lancamentosImportados, erros, mensagensErros, lancamentosJson);
     }
+
 
 }

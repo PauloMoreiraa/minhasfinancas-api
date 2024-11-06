@@ -2,13 +2,19 @@ package com.example.minhasfinancas.api.controller;
 
 import com.example.minhasfinancas.MinhasfinancasApplication;
 import com.example.minhasfinancas.api.dto.AtualizaStatusDTO;
+import com.example.minhasfinancas.api.dto.ImportacaoResultadoDTO;
 import com.example.minhasfinancas.api.dto.LancamentoDTO;
+import com.example.minhasfinancas.exception.RegraNegocioException;
+import com.example.minhasfinancas.model.entity.Categoria;
 import com.example.minhasfinancas.model.entity.Lancamento;
 import com.example.minhasfinancas.model.entity.Usuario;
 import com.example.minhasfinancas.model.enums.StatusLancamento;
+import com.example.minhasfinancas.model.enums.TipoLancamento;
 import com.example.minhasfinancas.model.repository.LancamentoRepository;
 import com.example.minhasfinancas.service.LancamentoService;
 import com.example.minhasfinancas.service.impl.UsuarioServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.opencsv.exceptions.CsvValidationException;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,14 +26,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -45,6 +52,7 @@ public class LancamentoControllerTest {
 
     @MockBean
     private UsuarioServiceImpl usuarioServiceImpl;
+
     @Autowired
     private LancamentoRepository lancamentoRepository;
 
@@ -268,5 +276,148 @@ public class LancamentoControllerTest {
         Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         Assertions.assertThat(response.getBody()).isEqualTo("Não é possível atualizar um lançamento que já foi efetivado ou cancelado.");
     }
+
+    @Test
+    public void deveRetornarErroQuandoRegraDeNegocioFalha() {
+        // Cenário
+        LancamentoDTO dto = new LancamentoDTO();
+
+        // Simula uma exceção de negócio
+        Mockito.when(service.salvar(Mockito.any(Lancamento.class))).thenThrow(new RegraNegocioException("Usuário não encontrado para o Id informado."));
+
+        // Execução
+        ResponseEntity<?> response = lancamentoController.salvar(dto);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Usuário não encontrado para o Id informado.");
+    }
+
+    @Test
+    public void deveConverterLancamentoParaLancamentoDTO() {
+        // Cenário
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        Categoria categoria = new Categoria();
+        categoria.setId(2L);
+
+        Lancamento lancamento = new Lancamento();
+        lancamento.setId(1L);
+        lancamento.setDescricao("Descrição de Teste");
+        lancamento.setValor(BigDecimal.valueOf(100));
+        lancamento.setMes(10);
+        lancamento.setAno(2024);
+        lancamento.setStatus(StatusLancamento.PENDENTE);
+        lancamento.setTipo(TipoLancamento.DESPESA);
+        lancamento.setUsuario(usuario);
+        lancamento.setLatitude(BigDecimal.valueOf(-23.55052));
+        lancamento.setLongitude(BigDecimal.valueOf(-46.633308));
+        lancamento.setCategoria(categoria);
+
+        // Ação
+        LancamentoDTO dto = lancamentoController.converter(lancamento);
+
+        // Verificação
+        Assertions.assertThat(dto.getId()).isEqualTo(lancamento.getId());
+        Assertions.assertThat(dto.getDescricao()).isEqualTo(lancamento.getDescricao());
+        Assertions.assertThat(dto.getValor()).isEqualTo(lancamento.getValor());
+        Assertions.assertThat(dto.getMes()).isEqualTo(lancamento.getMes());
+        Assertions.assertThat(dto.getAno()).isEqualTo(lancamento.getAno());
+        Assertions.assertThat(dto.getStatus()).isEqualTo(lancamento.getStatus().name());
+        Assertions.assertThat(dto.getTipo()).isEqualTo(lancamento.getTipo().name());
+        Assertions.assertThat(dto.getUsuario()).isEqualTo(lancamento.getUsuario().getId());
+        Assertions.assertThat(dto.getLatitude()).isEqualTo(lancamento.getLatitude());
+        Assertions.assertThat(dto.getLongitude()).isEqualTo(lancamento.getLongitude());
+        Assertions.assertThat(dto.getCategoriaId()).isEqualTo(lancamento.getCategoria().getId());
+    }
+
+    @Test
+    public void deveValidarLatitudeCorreta() {
+        // Cenário
+        BigDecimal latitude = new BigDecimal("12.345678");
+
+        // Ação e Verificação
+        Assertions.assertThatCode(() -> lancamentoController.validarCoordenadas(latitude, null))
+                .doesNotThrowAnyException();
+    }
+
+    @Test(expected = RegraNegocioException.class)
+    public void deveLancarExcecaoParaLatitudeForaDoFormato() {
+        // Cenário
+        BigDecimal latitude = new BigDecimal("1234.123456789123");
+
+        // Ação
+        lancamentoController.validarCoordenadas(latitude, null);
+    }
+
+    @Test
+    public void deveValidarLongitudeCorreta() {
+        // Cenário
+        BigDecimal longitude = new BigDecimal("12.345678");
+
+        // Ação e Verificação
+        Assertions.assertThatCode(() -> lancamentoController.validarCoordenadas(null, longitude))
+                .doesNotThrowAnyException();
+    }
+
+    @Test(expected = RegraNegocioException.class)
+    public void deveLancarExcecaoParaLongitudeForaDoFormato() {
+        // Cenário
+        BigDecimal longitude = new BigDecimal("1234.123456789123");
+
+        // Ação
+        lancamentoController.validarCoordenadas(null, longitude);
+    }
+
+    @Test
+    public void deveImportarLancamentosCSVComSucesso() throws IOException, CsvValidationException {
+        // Cenário
+        Long usuarioId = 1L;
+        MockMultipartFile file = new MockMultipartFile("file", "lancamentos.csv", "text/csv", "conteúdo do csv".getBytes());
+
+        List<String> mensagensErros = Arrays.asList("Erro 1", "Erro 2");
+        List<String> lancamentosJson = Arrays.asList("{\"id\":1,\"descricao\":\"Teste\"}", "{\"id\":2,\"descricao\":\"Teste 2\"}");
+
+        ImportacaoResultadoDTO resultado = new ImportacaoResultadoDTO(10, 2, mensagensErros, lancamentosJson);
+
+        Mockito.when(service.importarLancamentosCSV(file, usuarioId)).thenReturn(resultado);
+
+        // Ação
+        ResponseEntity<?> response = lancamentoController.importarLancamentosCSV(file, usuarioId);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Assertions.assertThat(response.getBody()).isEqualTo(resultado);
+
+        // Verifique os detalhes do resultado
+        ImportacaoResultadoDTO resultadoRetornado = (ImportacaoResultadoDTO) response.getBody();
+        Assertions.assertThat(resultadoRetornado.getLancamentosImportados()).isEqualTo(10);
+        Assertions.assertThat(resultadoRetornado.getErros()).isEqualTo(2);
+        Assertions.assertThat(resultadoRetornado.getMensagensErros()).isEqualTo(mensagensErros);
+        Assertions.assertThat(resultadoRetornado.getLancamentosJson()).isEqualTo(lancamentosJson);
+    }
+
+    @Test
+    public void deveRetornarErroAoImportarLancamentosCSV() throws IOException, CsvValidationException {
+        // Cenário
+        Long usuarioId = 1L;
+        MockMultipartFile file = new MockMultipartFile("file", "invalid.csv", "text/csv", "conteúdo inválido".getBytes());
+
+        // Simulando o erro ao chamar o serviço
+        Mockito.when(service.importarLancamentosCSV(file, usuarioId))
+                .thenThrow(new IOException("Erro ao processar o arquivo CSV"));
+
+        // Ação
+        ResponseEntity<?> response = lancamentoController.importarLancamentosCSV(file, usuarioId);
+
+        // Verificação
+        Assertions.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Assertions.assertThat(response.getBody()).isEqualTo("Erro ao importar lançamentos: Erro ao processar o arquivo CSV");
+
+        // Verifique se o método do serviço foi chamado corretamente
+        Mockito.verify(service, Mockito.times(1)).importarLancamentosCSV(file, usuarioId);
+    }
+
 }
 
