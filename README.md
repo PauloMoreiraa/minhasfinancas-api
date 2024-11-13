@@ -4,7 +4,9 @@
 
 Minhas Finanças API é uma aplicação desenvolvida com Spring Boot projetada para simplificar o gerenciamento de finanças pessoais. Esta API permite aos usuários acompanhar suas finanças de maneira eficiente, oferecendo funcionalidades para o registro e a análise de ganhos e gastos.
 
-🌐 [Projeto FrontEnd](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front)
+🌐 [Projeto Frontend](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-front)
+
+🌐 [Projeto ArcGIS](https://dev.azure.com/muralisti/Programa%20de%20Est%C3%A1gio%20da%20Muralis/_git/pem-paulo-henrique-arcgis?path=%2F&version=GBmain&_a=contents)
 
 ## 🧪 Cobertura de Testes
 
@@ -179,7 +181,7 @@ Abaixo está a descrição dos principais endpoints da API:
         "longitude": -46.633308,
         "categoria": {
           "id": 1,
-          "nome": "Vendas"
+          "descricao": "Vendas"
         }
       },
       // ...
@@ -206,7 +208,7 @@ Abaixo está a descrição dos principais endpoints da API:
       "longitude": -46.633308,
       "categoria": {
         "id": 1,
-        "nome": "Vendas"
+        "descricao": "Vendas"
       }
     }
     ```
@@ -230,7 +232,7 @@ Abaixo está a descrição dos principais endpoints da API:
       "longitude": -46.633308,
       "categoria": {
         "id": 1,
-        "nome": "Vendas"
+        "descricao": "Vendas"
       }
     }
     ```
@@ -256,7 +258,7 @@ Abaixo está a descrição dos principais endpoints da API:
       "longitude": -46.633308,
       "categoria": {
         "id": 1,
-        "nome": "Vendas"
+        "descricao": "Vendas"
       }
     }
     ```
@@ -322,7 +324,7 @@ Abaixo está a descrição dos principais endpoints da API:
         "longitude": -46.633308,
         "categoria": {
           "id": 1,
-          "nome": "Vendas"
+          "descricao": "Vendas"
         }
       },
       // ...
@@ -342,7 +344,7 @@ Abaixo está a descrição dos principais endpoints da API:
     ```json
     {
       "id": 1,
-      "nome": "Vendas"
+      "descricao": "Vendas"
     }
     ```
 
